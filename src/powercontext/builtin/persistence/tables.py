@@ -686,6 +686,22 @@ TOPIC_MEMORY_ACTIVE_CHUNKS_TABLE = Table(
     CheckConstraint("end_offset > start_offset", name="ck_pc_topic_memory_active_chunks_offsets"),
 )
 
+SOURCE_LIFECYCLE_STATES_TABLE = Table(
+    "pc_source_lifecycle_states",
+    SHARED_METADATA,
+    Column("scope_id", identity_string(MAX_SCOPE_ID_LENGTH), primary_key=True),
+    Column("state", _entry_text_type(), nullable=False),
+    Column("version", Integer, nullable=False),
+)
+
+TOPIC_MEMORY_LIFECYCLE_TABLE = Table(
+    "pc_topic_memory_lifecycle",
+    SHARED_METADATA,
+    Column("scope_id", identity_string(MAX_SCOPE_ID_LENGTH), primary_key=True),
+    Column("artifact_id", identity_string(MAX_ARTIFACT_ID_LENGTH), primary_key=True),
+    Column("available", Boolean, nullable=False),
+)
+
 CONNECTOR_CHECKPOINTS_TABLE = Table(
     "pc_connector_checkpoints",
     SHARED_METADATA,
@@ -1020,6 +1036,7 @@ TOPIC_MEMORY_TABLES = (
     TOPIC_MEMORY_REVISION_PUBLICATIONS_TABLE,
     TOPIC_MEMORY_ACTIVE_TOPICS_TABLE,
     TOPIC_MEMORY_ACTIVE_CHUNKS_TABLE,
+    TOPIC_MEMORY_LIFECYCLE_TABLE,
 )
 
 # OceanBase requires FK column lengths to match the parent. A normalized-key
@@ -1187,5 +1204,10 @@ BUILTIN_TABLES = (
     + MEMORY_TABLES
     + STATISTICS_TABLES
     + RECURRENCE_TABLES
-    + (ARTIFACT_TAGS_TABLE, DREAM_RUNS_TABLE, RECEIPT_MIGRATION_REVIEW_TABLE)
+    + (
+        ARTIFACT_TAGS_TABLE,
+        DREAM_RUNS_TABLE,
+        RECEIPT_MIGRATION_REVIEW_TABLE,
+        SOURCE_LIFECYCLE_STATES_TABLE,
+    )
 )

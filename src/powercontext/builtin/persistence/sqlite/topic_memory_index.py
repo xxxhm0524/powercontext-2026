@@ -153,6 +153,10 @@ _SEARCH_TOPIC_FTS_SQL = """
                bm25(pc_topic_memory_topic_fts) AS score, ({coverage}) AS coverage
         FROM pc_topic_memory_topic_fts
         WHERE pc_topic_memory_topic_fts MATCH :query AND scope_id = :scope_id
+          AND pc_topic_memory_topic_fts.artifact_id NOT IN (
+              SELECT artifact_id FROM pc_topic_memory_lifecycle
+              WHERE scope_id = :scope_id AND available = 0
+          )
     )
     SELECT artifact_id, revision, title, summary
     FROM scored
@@ -164,12 +168,20 @@ _COUNT_TOPIC_FTS_SQL = """
     SELECT count(*)
     FROM pc_topic_memory_topic_fts
     WHERE pc_topic_memory_topic_fts MATCH :query AND scope_id = :scope_id
+      AND pc_topic_memory_topic_fts.artifact_id NOT IN (
+          SELECT artifact_id FROM pc_topic_memory_lifecycle
+          WHERE scope_id = :scope_id AND available = 0
+      )
     """
 _COUNT_TOPIC_FTS_ELIGIBLE_SQL = """
     WITH scored AS (
         SELECT ({coverage}) AS coverage
         FROM pc_topic_memory_topic_fts
         WHERE pc_topic_memory_topic_fts MATCH :query AND scope_id = :scope_id
+          AND pc_topic_memory_topic_fts.artifact_id NOT IN (
+              SELECT artifact_id FROM pc_topic_memory_lifecycle
+              WHERE scope_id = :scope_id AND available = 0
+          )
     )
     SELECT count(*)
     FROM scored
@@ -181,6 +193,10 @@ _SEARCH_CHUNK_FTS_SQL = """
                bm25(pc_topic_memory_chunk_fts) AS score, ({coverage}) AS coverage
         FROM pc_topic_memory_chunk_fts
         WHERE pc_topic_memory_chunk_fts MATCH :query AND scope_id = :scope_id
+          AND pc_topic_memory_chunk_fts.artifact_id NOT IN (
+              SELECT artifact_id FROM pc_topic_memory_lifecycle
+              WHERE scope_id = :scope_id AND available = 0
+          )
     ), ranked AS (
         SELECT scored.*,
                row_number() OVER (
@@ -201,6 +217,10 @@ _COUNT_CHUNK_FTS_SQL = """
                bm25(pc_topic_memory_chunk_fts) AS score, ({coverage}) AS coverage
         FROM pc_topic_memory_chunk_fts
         WHERE pc_topic_memory_chunk_fts MATCH :query AND scope_id = :scope_id
+          AND pc_topic_memory_chunk_fts.artifact_id NOT IN (
+              SELECT artifact_id FROM pc_topic_memory_lifecycle
+              WHERE scope_id = :scope_id AND available = 0
+          )
     ), ranked AS (
         SELECT scored.*,
                row_number() OVER (
@@ -219,6 +239,10 @@ _COUNT_CHUNK_FTS_ELIGIBLE_SQL = """
                bm25(pc_topic_memory_chunk_fts) AS score, ({coverage}) AS coverage
         FROM pc_topic_memory_chunk_fts
         WHERE pc_topic_memory_chunk_fts MATCH :query AND scope_id = :scope_id
+          AND pc_topic_memory_chunk_fts.artifact_id NOT IN (
+              SELECT artifact_id FROM pc_topic_memory_lifecycle
+              WHERE scope_id = :scope_id AND available = 0
+          )
     ), ranked AS (
         SELECT scored.*,
                row_number() OVER (
@@ -262,6 +286,10 @@ _TOPIC_VECTOR_SEARCH_SQL = text(
     JOIN pc_topic_memory_active_topics AS a
       ON a.scope_id = v.scope_id AND a.artifact_id = v.artifact_id AND a.revision = v.revision
     WHERE v.scope_id = :scope_id
+      AND a.artifact_id NOT IN (
+          SELECT artifact_id FROM pc_topic_memory_lifecycle
+          WHERE scope_id = :scope_id AND available = 0
+      )
     ORDER BY nearest.distance, a.artifact_id, a.revision DESC
     LIMIT :candidate_limit
     """
@@ -290,6 +318,10 @@ _CHUNK_VECTOR_SEARCH_SQL = text(
           ON c.scope_id = v.scope_id AND c.artifact_id = v.artifact_id
          AND c.revision = v.revision AND c.chunk_ordinal = v.chunk_ordinal
         WHERE v.scope_id = :scope_id
+          AND a.artifact_id NOT IN (
+              SELECT artifact_id FROM pc_topic_memory_lifecycle
+              WHERE scope_id = :scope_id AND available = 0
+          )
     )
     SELECT artifact_id, revision, title, summary,
            chunk_ordinal, start_offset, chunk_text, distance

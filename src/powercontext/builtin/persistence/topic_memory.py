@@ -56,6 +56,7 @@ from powercontext.builtin.persistence.tables import (
     ARTIFACTS_TABLE,
     TOPIC_MEMORY_ACTIVE_CHUNKS_TABLE,
     TOPIC_MEMORY_ACTIVE_TOPICS_TABLE,
+    TOPIC_MEMORY_LIFECYCLE_TABLE,
     TOPIC_MEMORY_RETRIEVAL_SHAPE_TABLE,
     TOPIC_MEMORY_REVISION_PUBLICATIONS_TABLE,
 )
@@ -379,6 +380,12 @@ class TopicMemoryRepository:
             .where(
                 TOPIC_MEMORY_ACTIVE_TOPICS_TABLE.c.scope_id == scope_id,
                 TOPIC_MEMORY_ACTIVE_TOPICS_TABLE.c.family == TopicMemory.family,
+                TOPIC_MEMORY_ACTIVE_TOPICS_TABLE.c.artifact_id.not_in(
+                    select(TOPIC_MEMORY_LIFECYCLE_TABLE.c.artifact_id).where(
+                        TOPIC_MEMORY_LIFECYCLE_TABLE.c.scope_id == scope_id,
+                        TOPIC_MEMORY_LIFECYCLE_TABLE.c.available.is_(False),
+                    )
+                ),
             )
         )
         if tag_filter is not None:

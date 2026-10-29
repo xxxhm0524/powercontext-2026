@@ -201,6 +201,21 @@ class RuntimeConfig(BaseModel):
 
     schedule_seconds: float | None = Field(default=None, gt=0)
     memory_schedule_seconds: float | None = Field(default=None, gt=0)
+    memory_source_count_threshold: int | None = None
+    topic_memory_source_count_threshold: int | None = None
+
+    @field_validator(
+        "memory_source_count_threshold",
+        "topic_memory_source_count_threshold",
+        mode="before",
+    )
+    @classmethod
+    def validate_source_count_threshold(cls, value: Any) -> Any:
+        if value is None:
+            return None
+        if type(value) is not int or value <= 0:
+            raise ValueError("source count threshold must be a positive integer")  # noqa: TRY003
+        return value
     experience_schedule_seconds: float | None = Field(default=None, gt=0)
     dream_enabled: bool = True
     dream_max_pending_per_scope: int = Field(default=32, ge=1, le=1000)
