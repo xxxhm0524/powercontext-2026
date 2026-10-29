@@ -1,0 +1,238 @@
+app:
+  description: '记忆酒馆：一个会记住你的角色扮演小酒馆。掌柜阿墨会记住你的名字、约定和上次讲的故事，下一次推门进来他还认得你。'
+  icon: 🍺
+  icon_background: '#FFF4E6'
+  mode: advanced-chat
+  name: 记忆酒馆
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.2
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: '欢迎来到「记忆酒馆」。我是掌柜阿墨——放心，我记性很好。先说说，你叫什么名字？'
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+    - 我叫阿岚，是一名迷路的旅人。
+    - 还记得我们上次的约定吗？
+    - 给我讲一个关于雾港的故事吧。
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: http-request
+      id: 1800000000001-source-1800000000002-target
+      source: '1800000000001'
+      sourceHandle: source
+      target: '1800000000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: http-request
+        targetType: llm
+      id: 1800000000002-source-1800000000003-target
+      source: '1800000000002'
+      sourceHandle: source
+      target: '1800000000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: http-request
+      id: 1800000000003-source-1800000000004-target
+      source: '1800000000003'
+      sourceHandle: source
+      target: '1800000000004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: http-request
+        targetType: answer
+      id: 1800000000004-source-1800000000005-target
+      source: '1800000000004'
+      sourceHandle: source
+      target: '1800000000005'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables: []
+      height: 89
+      id: '1800000000001'
+      position:
+        x: 80
+        y: 280
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: key-value-recall
+            key: ''
+            type: text
+            value: '{"player_id": "{{#sys.user_id#}}", "query": "{{#sys.query#}}"}'
+          type: json
+        desc: '从 PowerContext 召回该玩家的长期记忆（纯文本）'
+        headers: 'Content-Type: application/json'
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 1
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        timeout:
+          connect: 30
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+          read: 60
+          write: 30
+        title: 召回记忆
+        type: http-request
+        url: http://host.docker.internal:8099/recall
+        variables: []
+      height: 134
+      id: '1800000000002'
+      position:
+        x: 380
+        y: 280
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.8
+          mode: chat
+          name: gpt-4o-mini
+          provider: openai
+        prompt_template:
+        - id: system-001
+          role: system
+          text: |
+            你是「记忆酒馆」的掌柜阿墨，一个温和、爱讲故事、记性极好的角色。你在和推门进来的旅人聊天。
+
+            以下是你记得的、关于这位旅人的长期记忆（由 PowerContext 提供）：
+            {{#1800000000002.body#}}
+
+            行为规则：
+            1. 以阿墨的口吻用中文回应，像一个有血有肉的人，不要提“记忆库”“系统”“数据”等词。
+            2. 如果记忆里出现这位旅人的名字、喜好、约定或过去发生的事，要自然地用上，让他感到“你居然还记得”。
+            3. 如果记忆为空或与当前话题无关，就当作第一次见面，热情地招呼并主动问他的名字或来意。
+            4. 每次回复保持 2～4 句话，可以抛出一个问题把对话继续下去；故事要具体、有画面感，不要空泛。
+            5. 不要编造记忆里没有的具体事实（例如他从未说过的名字或约定）；如果记不清，就坦率又俏皮地承认。
+        - id: user-001
+          role: user
+          text: '{{#sys.query#}}'
+        selected: false
+        title: 掌柜阿墨
+        type: llm
+        variables: []
+      height: 98
+      id: '1800000000003'
+      position:
+        x: 680
+        y: 280
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: key-value-remember
+            key: ''
+            type: text
+            value: '{"player_id": "{{#sys.user_id#}}", "user_message": "{{#sys.query#}}", "assistant_reply": "{{#1800000000003.text#}}"}'
+          type: json
+        desc: '把这一轮对话写入 PowerContext Memory，供下一次会话召回'
+        headers: 'Content-Type: application/json'
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 1
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        timeout:
+          connect: 30
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+          read: 60
+          write: 30
+        title: 记住这一轮
+        type: http-request
+        url: http://host.docker.internal:8099/remember
+        variables: []
+      height: 134
+      id: '1800000000004'
+      position:
+        x: 980
+        y: 280
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1800000000003.text#}}'
+        desc: ''
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 102
+      id: '1800000000005'
+      position:
+        x: 1280
+        y: 280
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7
