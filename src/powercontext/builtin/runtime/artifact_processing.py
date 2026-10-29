@@ -61,7 +61,7 @@ from powercontext.builtin.persistence.supervision import (
 from powercontext.builtin.persistence.tables import (
     ARTIFACT_PROCESSING_INTENTS_TABLE,
     ARTIFACT_PROCESSING_LEASES_TABLE,
-    SOURCE_JOURNAL_HEADS_TABLE,
+    SOURCES_TABLE,
 )
 from powercontext.builtin.runtime.processing_contracts import (
     ArtifactProcessingWorkAssignment,
@@ -822,14 +822,20 @@ class ArtifactProcessingSupervisor:
                     continue
                 if row.scope_id in state.queued or row.scope_id in state.running or row.scope_id in state.retries:
                     continue
-                head = await connection.scalar(
-                    select(SOURCE_JOURNAL_HEADS_TABLE.c.position).where(
-                        SOURCE_JOURNAL_HEADS_TABLE.c.scope_id == row.scope_id
-                    )
-                )
                 cursor = await cursors.load(connection, row.scope_id, binding.binding_name)
                 consumed = 0 if cursor is None else cursor.cursor.sequence
-                if int(head or 0) - consumed >= threshold:
+                pending = int(
+                    await connection.scalar(
+                        select(func.count())
+                        .select_from(SOURCES_TABLE)
+                        .where(
+                            SOURCES_TABLE.c.scope_id == row.scope_id,
+                            SOURCES_TABLE.c.journal_position > consumed,
+                        )
+                    )
+                    or 0
+                )
+                if pending >= threshold:
                     await self._intents.request(connection, row.scope_id, binding.binding_name)
                     requested_any = True
         if requested_any:
