@@ -31,7 +31,7 @@
 
 | 技术 | 在本作品中的实际作用 | 可核对材料 |
 | --- | --- | --- |
-| **MiniMax** | 读取上下文后生成代码修改 diff；参与实际开发任务 | `records/minimax_dev_record.jsonl`、`records/minimax_dev_record.md`、`validation/minimax_output.diff` |
+| **MiniMax** | 读取上下文后生成代码修改 diff；参与实际开发任务 | `records/minimax_dev_record.jsonl`（配置 Key 后生成）、`records/minimax_dev_record.md`、`validation/minimax_output.diff` |
 | **seekdb** | 保存规格/代码/测试的块与倒排索引；每次上下文选择执行 SQL 检索 | `records/db_query_record.jsonl`、`records/db_query_record.md`，查询示例含 SQL、参数、行数、耗时 |
 | **PowerContext** | 保存任务状态（阶段、已完成、待办、验证结果）；重启后读取并注入上下文 | `records/powercontext_state_record.jsonl`、`records/powercontext_state_record.md`，同一 scope 跨进程读取 |
 
