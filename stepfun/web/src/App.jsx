@@ -168,6 +168,11 @@ export default function App() {
       },
       search: (text, topK = 5) => runSearchText(text, topK),
       benchmark: () => runBenchmark(),
+      embedBatch: async (texts, batchSize = 8) => {
+        await ensureModel("auto");
+        const result = await embedderRef.current.embed(texts, { batchSize });
+        return { elapsedMs: result.elapsedMs, batchMs: result.batchMs, backend: result.backend, dtype: result.dtype };
+      },
     };
   });
 

@@ -29,7 +29,7 @@
 ## 4. 状态与优化
 
 - **状态**：当前知识库名保存于 localStorage；切换、清空、删除均按集合名路由，连续导入和切换后的检索结果与当前知识库一致。
-- **优化**：Web Worker + 8 条/批的 embedding 批处理；模型本地托管与 HTTP 缓存；写入按 32 条/批提交；索引统一 refresh；检索固定开启 RRF（rankWindowSize=20/40，rankConstant=60）。
+- **优化**：Web Worker + 8 条/批的 embedding 批处理（30 条约 200 字符文本：WebGPU batch=1 **226.9 ms** → batch=8 **39.6 ms**，提升 **5.73×**；WASM 1184.9 ms → 1065.1 ms，提升 1.11×）；模型本地托管与 HTTP 缓存；写入按 32 条/批提交；索引统一 refresh；检索固定开启 RRF（rankWindowSize=20/40，rankConstant=60）。
 - **实测**（Windows 11 10.0.26200，Chromium 146，NVIDIA Blackwell，24 核；30 篇文档、20 条查询、batch=8）：
 
 | 配置 | Embedding 吞吐 | seekdb P50 / P95 | 端到端 P50 / P95 |

@@ -54,6 +54,20 @@
       "e2eP95Ms": 19.6
     }
   },
+  "batching": {
+    "texts": 30,
+    "textLength": "约 200 字符/条",
+    "webgpu": {
+      "batch1Ms": 226.9,
+      "batch8Ms": 39.6,
+      "speedup": 5.73
+    },
+    "wasm": {
+      "batch1Ms": 1184.9,
+      "batch8Ms": 1065.1,
+      "speedup": 1.11
+    }
+  },
   "indexWrite": {
     "documents": 30,
     "embeddingMs": 824.2,
