@@ -89,10 +89,10 @@ seekdb.exe --base-dir=D:/seekdb-data --nodaemon --port=2881 `
 ```bash
 cp .env.example .env
 # 修改 SEEKDB_MODE=embedded
-npm install   # 首次安装会按需下载 seekdb 原生绑定
+npm install   # 首次连接时 @seekdb/js-bindings 会按需下载 seekdb 原生运行时（约 90 MB）
 ```
 
-嵌入模式数据存放在 `SEEKDB_PATH`（默认 `./data/seekdb`）。
+嵌入模式数据存放在 `SEEKDB_PATH`（默认 `./data/seekdb`）。首次连接需要网络下载原生绑定，后续从 `~/.seekdb/bindings` 缓存加载。
 
 #### 方式 C：Docker（Linux 服务器）
 
