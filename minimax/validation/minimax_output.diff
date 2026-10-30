@@ -1,0 +1,39 @@
+diff --git a/src/order_service.py b/src/order_service.py
+index 3d8f4b2..f5a1c9e 100644
+--- a/src/order_service.py
++++ b/src/order_service.py
+@@ -28,17 +28,31 @@ def list_orders(
+     offset: int = 0,
+ ) -> list[Order]:
+-    """Return orders in newest-first order.
+-
+-    ``status`` and ``min_total`` are accepted by the public interface but are
+-    not applied yet; implementing them is the task described in specs.
+-    """
++    """Return orders in newest-first order, optionally filtered."""
+ 
+     if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 100:
+         raise ValueError("limit must be an integer between 1 and 100")
+     if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
+         raise ValueError("offset must be a non-negative integer")
+ 
++    if status is not None and status not in VALID_STATUSES:
++        raise ValueError("status must be one of: pending, paid, shipped, cancelled")
++
++    minimum: Decimal | None = None
++    if min_total is not None:
++        minimum = Decimal(min_total) if isinstance(min_total, str) else Decimal(min_total)
++        if minimum < 0:
++            raise ValueError("min_total must be non-negative")
++
++    filtered = [
++        order
++        for order in orders
++        if (status is None or order.status == status)
++        and (minimum is None or minimum == 0 or order.total >= minimum)
++    ]
+     ordered = sorted(orders, key=lambda order: (order.created_at, order.order_id), reverse=True)
+-    return ordered[offset : offset + limit]
++    ordered = sorted(filtered, key=lambda order: (order.created_at, order.order_id), reverse=True)
++    return ordered[offset : offset + limit]
+*** End Patch

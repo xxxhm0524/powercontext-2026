@@ -172,25 +172,37 @@ class SeekDBMaterialStore:
 
     # ------------------------------------------------------------------ SQL
     def _execute(self, sql: str, params: Iterable[Any] = ()) -> list[dict[str, Any]]:
-        self.connect()
-        cursor = self._conn.cursor()
-        try:
-            cursor.execute(sql, tuple(params))
-            if cursor.description is None:
-                return []
-            rows = cursor.fetchall()
-            normalised: list[dict[str, Any]] = []
-            for row in rows:
-                if isinstance(row, dict):
-                    normalised.append(dict(row))
-                else:
-                    normalised.append(dict(zip([column[0] for column in cursor.description], row)))
-            return normalised
-        finally:
+        import pymysql
+
+        last_error: Exception | None = None
+        for attempt in range(2):
+            self.connect()
+            cursor = self._conn.cursor()
             try:
-                cursor.close()
-            except Exception:
-                pass
+                cursor.execute(sql, tuple(params))
+                if cursor.description is None:
+                    return []
+                rows = cursor.fetchall()
+                normalised: list[dict[str, Any]] = []
+                for row in rows:
+                    if isinstance(row, dict):
+                        normalised.append(dict(row))
+                    else:
+                        normalised.append(dict(zip([column[0] for column in cursor.description], row)))
+                return normalised
+            except pymysql.err.OperationalError as error:
+                last_error = error
+                code = error.args[0] if error.args else None
+                if attempt == 0 and code in (2006, 2013):
+                    self.close()
+                    continue
+                raise
+            finally:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
+        raise last_error or RuntimeError("seekdb query failed")
 
     def ensure_schema(self) -> None:
         for statement in _SCHEMA:

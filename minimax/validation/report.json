@@ -1,30 +1,39 @@
 {
-  "run_id": "20261030-134751",
-  "generated_at": "2026-10-30T13:49:09.431679+00:00",
-  "passed": 5,
+  "run_id": "20261030-142636",
+  "generated_at": "2026-10-30T14:27:18.360860+00:00",
+  "passed": 6,
   "total": 6,
-  "all_passed": false,
+  "all_passed": true,
   "checks": [
     {
       "name": "runnable",
       "passed": true,
       "detail": "init, context and validation sample executed via seekdb-server:gw0.apac.seekdb.ai:2881/d0_t2ywT0r3AcT1; init_chunks=24, context_exit=0, state_exit=0",
       "evidence": {
-        "import_id": "20261030134812147057",
+        "import_id": "20261030142648074709",
         "source_hash": "f226dcf862c766e7f7c25d0de20252beadb8f9793fae6bf5995b1dcf74b2a677",
         "chunks": 24,
         "terms": 793,
-        "elapsed_ms": 15398.56,
+        "elapsed_ms": 3275.28,
         "mode": "seekdb-server:gw0.apac.seekdb.ai:2881/d0_t2ywT0r3AcT1"
       }
     },
     {
       "name": "minimax_participation",
-      "passed": false,
-      "detail": "no live MiniMax transcript (set MINIMAX_API_KEY and rerun with --use-minimax)",
+      "passed": true,
+      "detail": "a MiniMax-provider transcript exists and its patch was applied",
       "evidence": {
         "record": "D:\\oceanbase\\powercontext-eco\\minimax\\records\\minimax_dev_record.jsonl",
-        "exists": false
+        "exists": true,
+        "records": 1,
+        "minimax_records": 1,
+        "models": [
+          "MiniMax-M3.1-Flash"
+        ],
+        "prompt_sha256": [
+          "cd5ac7fcc99ee3b630a32485a86958f795dd5e0b8dabfa22f16cb4b4c3577a97"
+        ],
+        "output_matches_applied_patch": true
       }
     },
     {
@@ -51,9 +60,9 @@
           "test": 15
         },
         "last_import": {
-          "import_id": "20261030134903670908",
+          "import_id": "20261030142708653213",
           "source_hash": "f226dcf862c766e7f7c25d0de20252beadb8f9793fae6bf5995b1dcf74b2a677",
-          "imported_at": "2026-10-30T13:49:03.671006+00:00",
+          "imported_at": "2026-10-30T14:27:08.653313+00:00",
           "chunk_count": 24
         }
       }
@@ -79,7 +88,7 @@
             "target_failed": true
           },
           "notes": "Validation run: context selected before code change.",
-          "updated_at": "2026-10-30T13:48:14.420149+00:00"
+          "updated_at": "2026-10-30T14:26:50.935324+00:00"
         },
         "final": {
           "task_id": "TASK-ORDER-FILTER-001",
@@ -96,7 +105,7 @@
             "full_tests": {
               "passed": 11
             },
-            "patch_provider": "reference",
+            "patch_provider": "minimax",
             "regression_tests": {
               "passed": 6
             },
@@ -105,7 +114,7 @@
             }
           },
           "notes": "Validation run complete.",
-          "updated_at": "2026-10-30T13:49:07.250602+00:00"
+          "updated_at": "2026-10-30T14:27:15.959135+00:00"
         }
       }
     },
@@ -132,8 +141,8 @@
           "full": {
             "passed": 11
           },
-          "log": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\logs\\pytest-after-20261030-134751.log",
-          "candidate_provider": "reference"
+          "log": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\logs\\pytest-after-20261030-142636.log",
+          "candidate_provider": "minimax"
         }
       }
     }
@@ -212,7 +221,7 @@
         "regression": {
           "passed": 6
         },
-        "log": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\logs\\pytest-before-20261030-134751.log"
+        "log": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\logs\\pytest-before-20261030-142636.log"
       }
     },
     {
@@ -235,7 +244,7 @@
           "target_failed": true
         },
         "notes": "Validation run: context selected before code change.",
-        "updated_at": "2026-10-30T13:48:14.420149+00:00"
+        "updated_at": "2026-10-30T14:26:50.935324+00:00"
       }
     },
     {
@@ -260,14 +269,14 @@
         "full": {
           "passed": 11
         },
-        "log": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\logs\\pytest-after-20261030-134751.log",
-        "candidate_provider": "reference"
+        "log": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\logs\\pytest-after-20261030-142636.log",
+        "candidate_provider": "minimax"
       }
     },
     {
       "name": "state_reuse_after_change",
       "passed": true,
-      "detail": "final state status=verified; verification={'full_tests': {'passed': 11}, 'patch_provider': 'reference', 'regression_tests': {'passed': 6}, 'target_tests': {'passed': 5}}",
+      "detail": "final state status=verified; verification={'full_tests': {'passed': 11}, 'patch_provider': 'minimax', 'regression_tests': {'passed': 6}, 'target_tests': {'passed': 5}}",
       "evidence": {
         "task_id": "TASK-ORDER-FILTER-001",
         "status": "verified",
@@ -283,7 +292,7 @@
           "full_tests": {
             "passed": 11
           },
-          "patch_provider": "reference",
+          "patch_provider": "minimax",
           "regression_tests": {
             "passed": 6
           },
@@ -292,9 +301,9 @@
           }
         },
         "notes": "Validation run complete.",
-        "updated_at": "2026-10-30T13:49:07.250602+00:00"
+        "updated_at": "2026-10-30T14:27:15.959135+00:00"
       }
     }
   ],
-  "notes": "MiniMax capture failed: t.py\", line 199, in _chat_anthropic\n    self._raise_for_status(response)\n    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"D:\\oceanbase\\powercontext-eco\\minimax\\sdd_context\\minimax_client.py\", line 288, in _raise_for_status\n    raise MiniMaxError(f\"MiniMax HTTP {response.status_code}: {body}\")\nsdd_context.minimax_client.MiniMaxError: MiniMax HTTP 402: {\"type\":\"error\",\"error\":{\"type\":\"insufficient_balance_error\",\"message\":\"insufficient balance (1008)\"},\"request_id\":\"0733d3511b92f12e63569fc46f913aeb\"}\n"
+  "notes": "Candidate patch produced by a live MiniMax call."
 }

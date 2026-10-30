@@ -29,6 +29,7 @@ class MiniMaxConfig:
     base_url: str = "https://api.minimaxi.com/anthropic"
     model: str = "MiniMax-M3.1-Flash"
     api_style: str = "anthropic"  # anthropic | native | openai
+    reasoning_effort: str = "low"
     timeout_seconds: float = 120.0
 
     @classmethod
@@ -41,6 +42,7 @@ class MiniMaxConfig:
             base_url=os.environ.get("MINIMAX_BASE_URL", cls.base_url).rstrip("/"),
             model=os.environ.get("MINIMAX_MODEL", cls.model),
             api_style=os.environ.get("MINIMAX_API_STYLE", cls.api_style).lower(),
+            reasoning_effort=os.environ.get("MINIMAX_REASONING_EFFORT", cls.reasoning_effort),
             timeout_seconds=float(os.environ.get("MINIMAX_TIMEOUT_SECONDS", "120")),
         )
 
@@ -185,6 +187,8 @@ class MiniMaxClient:
             "temperature": temperature,
             "messages": messages,
         }
+        if self.config.reasoning_effort:
+            payload["output_config"] = {"effort": self.config.reasoning_effort}
         if system:
             payload["system"] = system
         response = self._client.post(

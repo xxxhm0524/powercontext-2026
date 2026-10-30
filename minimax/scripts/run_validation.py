@@ -319,6 +319,9 @@ def main() -> int:
     # ---- apply candidate patch -------------------------------------------
     minimax_record_path = Path(args.minimax_record)
     used_minimax = False
+    if args.use_minimax and minimax_record_path.exists():
+        # A live run should produce one fresh transcript, not append old attempts.
+        minimax_record_path.unlink()
     if args.use_minimax and os.environ.get("MINIMAX_API_KEY"):
         capture = subprocess.run(
             [
@@ -440,7 +443,7 @@ def main() -> int:
         if used_minimax:
             output_file = VALIDATION / "minimax_output.diff"
             output_matches = output_file.exists() and output_file.read_text(encoding="utf-8").strip() == candidate_diff.strip()
-        minimax_ok = bool(minimax_records) and patch_result.applied and output_matches
+        minimax_ok = used_minimax and bool(minimax_records) and patch_result.applied and output_matches
         minimax_evidence.update(
             {
                 "records": len(records),

@@ -78,7 +78,7 @@ def main() -> int:
         ),
     )
     parser.add_argument("--fixture", default=None, help="offline fixture response; never used for final submission")
-    parser.add_argument("--max-tokens", type=int, default=12000)
+    parser.add_argument("--max-tokens", type=int, default=32000)
     args = parser.parse_args()
 
     bundle = load_bundle(Path(args.context))

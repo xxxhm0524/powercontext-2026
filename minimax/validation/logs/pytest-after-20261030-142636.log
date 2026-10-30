@@ -5,8 +5,8 @@ TARGET AFTER
   "exit_code": 0,
   "stdout": ".....                                                                    [100%]\n5 passed in 0.02s\n",
   "stderr": "",
-  "duration_ms": 338.45,
-  "timestamp": "2026-10-30T13:49:05.419107+00:00"
+  "duration_ms": 451.67,
+  "timestamp": "2026-10-30T14:27:13.551915+00:00"
 }
 
 REGRESSION AFTER
@@ -16,8 +16,8 @@ REGRESSION AFTER
   "exit_code": 0,
   "stdout": "......                                                                   [100%]\n6 passed in 0.02s\n",
   "stderr": "",
-  "duration_ms": 336.44,
-  "timestamp": "2026-10-30T13:49:05.755569+00:00"
+  "duration_ms": 452.45,
+  "timestamp": "2026-10-30T14:27:14.004395+00:00"
 }
 
 FULL AFTER
@@ -25,8 +25,8 @@ FULL AFTER
   "command": "D:\\oceanbase\\.venv-pc\\Scripts\\python.exe -m pytest -q --disable-warnings",
   "cwd": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\workspace\\demo_project",
   "exit_code": 0,
-  "stdout": "...........                                                              [100%]\n11 passed in 0.02s\n",
+  "stdout": "...........                                                              [100%]\n11 passed in 0.03s\n",
   "stderr": "",
-  "duration_ms": 339.97,
-  "timestamp": "2026-10-30T13:49:06.095562+00:00"
+  "duration_ms": 455.93,
+  "timestamp": "2026-10-30T14:27:14.460359+00:00"
 }

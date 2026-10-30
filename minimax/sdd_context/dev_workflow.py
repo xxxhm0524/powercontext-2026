@@ -116,13 +116,115 @@ def extract_diff(response_text: str) -> str:
     raise ValueError("MiniMax response did not contain a unified diff")
 
 
+def _apply_unified_diff_fuzzy(workspace_root: Path, diff_text: str) -> bool:
+    """Apply a unified diff by exact old-block matching.
+
+    LLMs occasionally mis-count hunk headers (for example ``@@ -27,21`` for
+    twenty old lines).  Line-number hints are therefore ignored; the exact old
+    block is located in the target file and replaced with the new block.  This
+    keeps model-generated patches applicable without weakening content checks.
+    """
+
+    lines = diff_text.splitlines()
+    files: list[dict[str, object]] = []
+    index = 0
+    while index < len(lines):
+        if lines[index].startswith("--- ") and index + 1 < len(lines) and lines[index + 1].startswith("+++ "):
+            new_path = lines[index + 1][4:].strip()
+            if new_path == "/dev/null":
+                return False
+            path = new_path[2:] if new_path.startswith("b/") else new_path
+            entry: dict[str, object] = {"path": path, "hunks": []}
+            index += 2
+            while index < len(lines) and not lines[index].startswith("--- "):
+                if not lines[index].startswith("@@"):
+                    index += 1
+                    continue
+                index += 1
+                old: list[str] = []
+                new: list[str] = []
+                while index < len(lines) and not lines[index].startswith(("@@", "--- ")):
+                    line = lines[index]
+                    if line.startswith("+") and not line.startswith("+++"):
+                        new.append(line[1:])
+                    elif line.startswith("-") and not line.startswith("---"):
+                        old.append(line[1:])
+                    elif line.startswith(" "):
+                        old.append(line[1:])
+                        new.append(line[1:])
+                    index += 1
+                entry["hunks"].append((old, new))  # type: ignore[union-attr]
+            files.append(entry)
+        else:
+            index += 1
+
+    if not files:
+        return False
+    planned: list[tuple[Path, str]] = []
+    for entry in files:
+        target = (workspace_root / str(entry["path"])).resolve()
+        try:
+            target.relative_to(workspace_root)
+        except ValueError:
+            return False
+        if not target.is_file():
+            return False
+        original = target.read_text(encoding="utf-8")
+        original_lines = original.splitlines()
+        cursor = 0
+        changed = False
+        for old, new in entry["hunks"]:  # type: ignore[union-attr]
+            found = -1
+            for position in range(cursor, len(original_lines) - len(old) + 1):
+                if original_lines[position : position + len(old)] == old:
+                    found = position
+                    break
+            if found < 0:
+                return False
+            original_lines[found : found + len(old)] = new
+            cursor = found + len(new)
+            changed = True
+        if changed:
+            text = "\n".join(original_lines) + ("\n" if original.endswith("\n") else "")
+            planned.append((target, text))
+    for target, text in planned:
+        target.write_text(text, encoding="utf-8", newline="\n")
+    return True
+
+
 def apply_diff(workspace_root: Path, diff_text: str, *, diff_path: Path | None = None) -> PatchResult:
     workspace_root = workspace_root.resolve()
     diff_path = (diff_path or workspace_root.parent / "candidate.patch").resolve()
-    diff_path.write_text(diff_text, encoding="utf-8", newline="\n")
+    normalised = diff_text.replace("\r\n", "\n").replace("\r", "\n")
+    diff_path.write_text(normalised, encoding="utf-8", newline="\n")
 
-    # GNU patch handles untracked demo projects predictably; git apply is a
-    # fallback for environments without the patch utility.
+    if _apply_unified_diff_fuzzy(workspace_root, normalised):
+        return PatchResult(True, 0, "applied with internal unified-diff applier", "", str(diff_path))
+
+    # Inside a git worktree, `git apply` is the most reliable applier but its
+    # paths are resolved from the repository top level.  Use --directory so the
+    # demo project can live under minimax/validation/... without moving it.
+    top = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=workspace_root,
+        capture_output=True,
+        text=True,
+    )
+    if top.returncode == 0:
+        repo_root = Path(top.stdout.strip()).resolve()
+        try:
+            relative = workspace_root.relative_to(repo_root).as_posix()
+        except ValueError:
+            relative = ""
+        if relative:
+            base = ["git", "apply", "--whitespace=nowarn", "--directory", relative, str(diff_path)]
+            check = subprocess.run([*base[:2], "--check", *base[2:]], cwd=repo_root, capture_output=True, text=True)
+            if check.returncode == 0:
+                applied = subprocess.run(base, cwd=repo_root, capture_output=True, text=True)
+                return PatchResult(applied.returncode == 0, applied.returncode, applied.stdout, applied.stderr, str(diff_path))
+            # Fall through to patch for non-git-friendly patches.
+
+    # GNU patch fallback for standalone directories.
     import shutil
 
     patch_binary = shutil.which("patch")
