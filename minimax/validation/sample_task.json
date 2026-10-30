@@ -1,0 +1,39 @@
+{
+  "task_id": "TASK-ORDER-FILTER-001",
+  "title": "为订单列表增加状态与最低金额筛选",
+  "description": "选择一个可运行的订单查询服务，按照 specs/orders.md 为 list_orders 增加 status 与 min_total 筛选，保持分页、排序和 summarize_by_status 的原有行为。",
+  "query": "为订单列表增加按状态和最低金额筛选，需保持分页兼容",
+  "required": {
+    "specs": [
+      "SPEC-ORD-002",
+      "SPEC-ORD-003",
+      "SPEC-ORD-004",
+      "SPEC-ORD-005"
+    ],
+    "code_symbols": [
+      "list_orders"
+    ],
+    "tests": [
+      "test_filter_by_status_returns_only_matching",
+      "test_filter_by_min_total_excludes_smaller",
+      "test_filter_combined_intersection_and_order",
+      "test_invalid_status_rejected",
+      "test_negative_min_total_rejected",
+      "test_pagination_preserves_order",
+      "test_invalid_limit_rejected"
+    ]
+  },
+  "acceptance": {
+    "target_test_file": "tests/test_orders_filters.py",
+    "regression_test_file": "tests/test_orders_regression.py",
+    "before_expected": {
+      "target": "5 failed",
+      "regression": "6 passed"
+    },
+    "after_expected": {
+      "target": "5 passed",
+      "regression": "6 passed",
+      "full": "11 passed"
+    }
+  }
+}

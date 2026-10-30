@@ -1,0 +1,733 @@
+{
+  "task_id": "TASK-ORDER-FILTER-001",
+  "query": "为订单列表增加按状态和最低金额筛选，需保持分页兼容",
+  "project_root": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\snapshots\\before\\demo_project",
+  "generated_at": "2026-10-30T09:43:49.636785+00:00",
+  "specs": [
+    {
+      "kind": "spec",
+      "source_path": "specs/orders.md",
+      "symbol": "SPEC-ORD-003",
+      "title": "按最低金额筛选",
+      "start_line": 17,
+      "end_line": 24,
+      "score": 29.83,
+      "reasons": [
+        "title:低金额,最低金,金额筛,额筛选,低金,最低,筛选,金额",
+        "path:orders,order",
+        "matched=16"
+      ],
+      "excerpt": "SPEC-ORD-003 — 按最低金额筛选\n`list_orders` 必须支持可选参数 `min_total`：\n\n- 仅返回 `total >= min_total` 的订单。\n- `min_total` 允许 `Decimal`、字符串或整数输入，内部统一转为 `Decimal`。\n- `min_total` 为负数时抛出 `ValueError`；为 0 时等价于不筛选金额。"
+    },
+    {
+      "kind": "spec",
+      "source_path": "specs/orders.md",
+      "symbol": "SPEC-ORD-001",
+      "title": "订单列表默认排序",
+      "start_line": 5,
+      "end_line": 8,
+      "score": 18.25,
+      "reasons": [
+        "title:单列表,订单列,列表,单列,订单",
+        "path:orders,order",
+        "matched=10"
+      ],
+      "excerpt": "SPEC-ORD-001 — 订单列表默认排序\n`list_orders` 默认按 `created_at` 倒序返回，时间相同时按 `order_id` 倒序，保证分页结果稳定。"
+    },
+    {
+      "kind": "spec",
+      "source_path": "specs/orders.md",
+      "symbol": "SPEC-ORD-002",
+      "title": "按状态筛选",
+      "start_line": 9,
+      "end_line": 16,
+      "score": 17.09,
+      "reasons": [
+        "title:按状态,按状,状态,筛选",
+        "path:orders,order",
+        "matched=10"
+      ],
+      "excerpt": "SPEC-ORD-002 — 按状态筛选\n`list_orders` 必须支持可选参数 `status`：\n\n- 仅返回 `status` 与参数完全匹配的订单。\n- `status` 必须是 `pending`、`paid`、`shipped`、`cancelled` 之一。\n- 传入未知状态时必须抛出 `ValueError`，不能静默返回空列表。"
+    },
+    {
+      "kind": "spec",
+      "source_path": "specs/orders.md",
+      "symbol": "SPEC-ORD-004",
+      "title": "分页与兼容性",
+      "start_line": 25,
+      "end_line": 32,
+      "score": 14.71,
+      "reasons": [
+        "title:兼容,分页",
+        "path:orders,order",
+        "matched=10"
+      ],
+      "excerpt": "SPEC-ORD-004 — 分页与兼容性\n`list_orders` 在筛选后执行 `offset` / `limit` 分页：\n\n- `limit` 必须是 1 到 100 之间的整数。\n- `offset` 必须是非负整数。\n- 原有默认排序、`summarize_by_status` 和非法分页参数校验必须保持兼容。"
+    },
+    {
+      "kind": "spec",
+      "source_path": "specs/orders.md",
+      "symbol": "SPEC-ORD-005",
+      "title": "组合筛选",
+      "start_line": 33,
+      "end_line": 35,
+      "score": 8.97,
+      "reasons": [
+        "title:筛选",
+        "path:orders,order",
+        "matched=6"
+      ],
+      "excerpt": "SPEC-ORD-005 — 组合筛选\n当 `status` 与 `min_total` 同时提供时，取两个条件的交集，再按默认排序分页，不得改变任一条件的边界行为。"
+    }
+  ],
+  "code": [
+    {
+      "kind": "code",
+      "source_path": "src/order_service.py",
+      "symbol": "<module>",
+      "title": "模块 src/order_service.py",
+      "start_line": 1,
+      "end_line": 56,
+      "score": 4.07,
+      "reasons": [
+        "title:order",
+        "path:order",
+        "matched=2"
+      ],
+      "excerpt": "A tiny order-query business service used by the SDD demo.\n\nThe service is deliberately dependency-free so the reviewer can run it with a\nstock Python interpreter.  Orders are supplied by the caller; persistence\nbelongs to the host application, not to the query helper."
+    },
+    {
+      "kind": "code",
+      "source_path": "src/order_service.py",
+      "symbol": "list_orders",
+      "title": "code list_orders",
+      "start_line": 27,
+      "end_line": 47,
+      "score": 22.85,
+      "reasons": [
+        "title:list_orders,orders,order,list",
+        "symbol:list_orders,orders,order,list",
+        "path:order",
+        "matched=10"
+      ],
+      "excerpt": "def list_orders(\n    orders: Iterable[Order],\n    *,\n    status: str | None = None,\n    min_total: Decimal | str | int | None = None,\n    limit: int = 20,\n    offset: int = 0,\n) -> list[Order]:\n    \"\"\"Return orders in newest-first order.\n\n    ``status`` and ``min_total`` are accepted by the public interface but are\n    not applied yet; implementing them is the task described in specs.\n    \"\"\"\n\n    if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 100:\n        raise ValueError(\"limit must be an integer between 1 and 100\")\n    if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:\n        raise ValueError(\"offset must be a non-negative integer\")\n\n    ordered = sorted(orders, key=lambda order: (order.created_at, order.order_id), reverse=True)\n    return ordered[offset : offset + limit]"
+    },
+    {
+      "kind": "code",
+      "source_path": "src/order_service.py",
+      "symbol": "summarize_by_status",
+      "title": "code summarize_by_status",
+      "start_line": 50,
+      "end_line": 56,
+      "score": 6.83,
+      "reasons": [
+        "title:status",
+        "symbol:status",
+        "path:order",
+        "matched=3"
+      ],
+      "excerpt": "def summarize_by_status(orders: Iterable[Order]) -> dict[str, int]:\n    \"\"\"Count orders by status; used by the dashboard and regression tests.\"\"\"\n\n    summary: dict[str, int] = {}\n    for order in orders:\n        summary[order.status] = summary.get(order.status, 0) + 1\n    return summary"
+    },
+    {
+      "kind": "code",
+      "source_path": "src/order_service.py",
+      "symbol": "Order",
+      "title": "code Order",
+      "start_line": 19,
+      "end_line": 24,
+      "score": 6.69,
+      "reasons": [
+        "title:order",
+        "symbol:order",
+        "path:order",
+        "matched=3"
+      ],
+      "excerpt": "class Order:\n    order_id: str\n    customer: str\n    status: str\n    total: Decimal\n    created_at: datetime"
+    }
+  ],
+  "tests": [
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_regression.py",
+      "symbol": "test_min_total_zero_is_no_amount_filter",
+      "title": "test test_min_total_zero_is_no_amount_filter",
+      "start_line": 75,
+      "end_line": 80,
+      "score": 23.96,
+      "reasons": [
+        "title:min_total,amount,filter,total,min",
+        "symbol:min_total,amount,filter,total,min",
+        "path:orders,order",
+        "regression",
+        "matched=8"
+      ],
+      "excerpt": "def test_min_total_zero_is_no_amount_filter() -> None:\n    \"\"\"REGRESSION: true\n    TARGET_SPECS: SPEC-ORD-003\n    \"\"\"\n\n    assert len(list_orders(make_orders(), min_total=0)) == len(make_orders())"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "test_filter_by_min_total_excludes_smaller",
+      "title": "test test_filter_by_min_total_excludes_smaller",
+      "start_line": 38,
+      "end_line": 42,
+      "score": 21.56,
+      "reasons": [
+        "title:min_total,filter,total,min",
+        "symbol:min_total,filter,total,min",
+        "path:filters,filter,orders,order",
+        "matched=8"
+      ],
+      "excerpt": "def test_filter_by_min_total_excludes_smaller() -> None:\n    \"\"\"TARGET_SPECS: SPEC-ORD-003\"\"\"\n\n    result = list_orders(make_orders(), min_total=Decimal(\"80.50\"))\n    assert [order.order_id for order in result] == [\"O-1004\", \"O-1002\", \"O-1001\"]"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "test_filter_combined_intersection_and_order",
+      "title": "test test_filter_combined_intersection_and_order",
+      "start_line": 45,
+      "end_line": 49,
+      "score": 17.22,
+      "reasons": [
+        "title:filter,order",
+        "symbol:filter,order",
+        "path:filters,filter,orders,order",
+        "matched=9"
+      ],
+      "excerpt": "def test_filter_combined_intersection_and_order() -> None:\n    \"\"\"TARGET_SPECS: SPEC-ORD-005\"\"\"\n\n    result = list_orders(make_orders(), status=\"paid\", min_total=Decimal(\"50\"))\n    assert [order.order_id for order in result] == [\"O-1001\"]"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "test_negative_min_total_rejected",
+      "title": "test test_negative_min_total_rejected",
+      "start_line": 59,
+      "end_line": 63,
+      "score": 16.6,
+      "reasons": [
+        "title:min_total,total,min",
+        "symbol:min_total,total,min",
+        "path:filters,filter,orders,order",
+        "matched=6"
+      ],
+      "excerpt": "def test_negative_min_total_rejected() -> None:\n    \"\"\"TARGET_SPECS: SPEC-ORD-003\"\"\"\n\n    with pytest.raises(ValueError):\n        list_orders(make_orders(), min_total=Decimal(\"-0.01\"))"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_regression.py",
+      "symbol": "test_pagination_preserves_order",
+      "title": "test test_pagination_preserves_order",
+      "start_line": 36,
+      "end_line": 44,
+      "score": 14.9,
+      "reasons": [
+        "title:pagination,order",
+        "symbol:pagination,order",
+        "path:orders,order",
+        "regression",
+        "matched=7"
+      ],
+      "excerpt": "def test_pagination_preserves_order() -> None:\n    \"\"\"REGRESSION: true\n    TARGET_SPECS: SPEC-ORD-004\n    \"\"\"\n\n    first = list_orders(make_orders(), limit=2, offset=0)\n    second = list_orders(make_orders(), limit=2, offset=2)\n    assert [order.order_id for order in first] == [\"O-1005\", \"O-1004\"]\n    assert [order.order_id for order in second] == [\"O-1003\", \"O-1002\"]"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "test_filter_by_status_returns_only_matching",
+      "title": "test test_filter_by_status_returns_only_matching",
+      "start_line": 31,
+      "end_line": 35,
+      "score": 13.92,
+      "reasons": [
+        "title:filter,status",
+        "symbol:filter,status",
+        "path:filters,filter,orders,order",
+        "matched=6"
+      ],
+      "excerpt": "def test_filter_by_status_returns_only_matching() -> None:\n    \"\"\"TARGET_SPECS: SPEC-ORD-002\"\"\"\n\n    result = list_orders(make_orders(), status=\"paid\")\n    assert [order.order_id for order in result] == [\"O-1003\", \"O-1001\"]"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "<module>",
+      "title": "模块 tests/test_orders_filters.py",
+      "start_line": 1,
+      "end_line": 63,
+      "score": 12.14,
+      "reasons": [
+        "title:filters,filter,orders,order",
+        "path:filters,filter,orders,order",
+        "matched=5"
+      ],
+      "excerpt": "Target tests for the new status / minimum-amount filters.\n\nThese tests describe the behaviour required by the task and intentionally fail\nagainst the before snapshot because the two filters are not implemented yet."
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "make_orders",
+      "title": "test make_orders",
+      "start_line": 21,
+      "end_line": 28,
+      "score": 10.62,
+      "reasons": [
+        "title:orders,order",
+        "symbol:orders,order",
+        "path:filters,filter,orders,order",
+        "matched=3"
+      ],
+      "excerpt": "def make_orders() -> list[Order]:\n    return [\n        Order(\"O-1001\", \"alice\", \"paid\", Decimal(\"120.00\"), datetime(2026, 10, 1, 9, 0)),\n        Order(\"O-1002\", \"bob\", \"pending\", Decimal(\"80.50\"), datetime(2026, 10, 2, 10, 0)),\n        Order(\"O-1003\", \"carol\", \"paid\", Decimal(\"45.00\"), datetime(2026, 10, 3, 11, 0)),\n        Order(\"O-1004\", \"dave\", \"shipped\", Decimal(\"300.00\"), datetime(2026, 10, 4, 12, 0)),\n        Order(\"O-1005\", \"eve\", \"cancelled\", Decimal(\"20.00\"), datetime(2026, 10, 5, 13, 0)),\n    ]"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_regression.py",
+      "symbol": "make_orders",
+      "title": "test make_orders",
+      "start_line": 17,
+      "end_line": 24,
+      "score": 9.82,
+      "reasons": [
+        "title:orders,order",
+        "symbol:orders,order",
+        "path:orders,order",
+        "matched=3"
+      ],
+      "excerpt": "def make_orders() -> list[Order]:\n    return [\n        Order(\"O-1001\", \"alice\", \"paid\", Decimal(\"120.00\"), datetime(2026, 10, 1, 9, 0)),\n        Order(\"O-1002\", \"bob\", \"pending\", Decimal(\"80.50\"), datetime(2026, 10, 2, 10, 0)),\n        Order(\"O-1003\", \"carol\", \"paid\", Decimal(\"45.00\"), datetime(2026, 10, 3, 11, 0)),\n        Order(\"O-1004\", \"dave\", \"shipped\", Decimal(\"300.00\"), datetime(2026, 10, 4, 12, 0)),\n        Order(\"O-1005\", \"eve\", \"cancelled\", Decimal(\"20.00\"), datetime(2026, 10, 5, 13, 0)),\n    ]"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "test_invalid_status_rejected",
+      "title": "test test_invalid_status_rejected",
+      "start_line": 52,
+      "end_line": 56,
+      "score": 8.96,
+      "reasons": [
+        "title:status",
+        "symbol:status",
+        "path:filters,filter,orders,order",
+        "matched=4"
+      ],
+      "excerpt": "def test_invalid_status_rejected() -> None:\n    \"\"\"TARGET_SPECS: SPEC-ORD-002\"\"\"\n\n    with pytest.raises(ValueError):\n        list_orders(make_orders(), status=\"refunded\")"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_regression.py",
+      "symbol": "test_invalid_limit_rejected",
+      "title": "test test_invalid_limit_rejected",
+      "start_line": 47,
+      "end_line": 55,
+      "score": 8.76,
+      "reasons": [
+        "title:limit",
+        "symbol:limit",
+        "path:orders,order",
+        "regression",
+        "matched=4"
+      ],
+      "excerpt": "def test_invalid_limit_rejected() -> None:\n    \"\"\"REGRESSION: true\n    TARGET_SPECS: SPEC-ORD-004\n    \"\"\"\n\n    with pytest.raises(ValueError):\n        list_orders(make_orders(), limit=0)\n    with pytest.raises(ValueError):\n        list_orders(make_orders(), limit=101)"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_regression.py",
+      "symbol": "test_negative_offset_rejected",
+      "title": "test test_negative_offset_rejected",
+      "start_line": 58,
+      "end_line": 64,
+      "score": 8.66,
+      "reasons": [
+        "title:offset",
+        "symbol:offset",
+        "path:orders,order",
+        "regression",
+        "matched=4"
+      ],
+      "excerpt": "def test_negative_offset_rejected() -> None:\n    \"\"\"REGRESSION: true\n    TARGET_SPECS: SPEC-ORD-004\n    \"\"\"\n\n    with pytest.raises(ValueError):\n        list_orders(make_orders(), offset=-1)"
+    }
+  ],
+  "state": null,
+  "sources": [
+    {
+      "kind": "spec",
+      "source_path": "specs/orders.md",
+      "symbol": "SPEC-ORD-003",
+      "title": "按最低金额筛选",
+      "start_line": 17,
+      "end_line": 24,
+      "score": 29.83,
+      "reasons": [
+        "title:低金额,最低金,金额筛,额筛选,低金,最低,筛选,金额",
+        "path:orders,order",
+        "matched=16"
+      ],
+      "excerpt": "SPEC-ORD-003 — 按最低金额筛选\n`list_orders` 必须支持可选参数 `min_total`：\n\n- 仅返回 `total >= min_total` 的订单。\n- `min_total` 允许 `Decimal`、字符串或整数输入，内部统一转为 `Decimal`。\n- `min_total` 为负数时抛出 `ValueError`；为 0 时等价于不筛选金额。"
+    },
+    {
+      "kind": "spec",
+      "source_path": "specs/orders.md",
+      "symbol": "SPEC-ORD-001",
+      "title": "订单列表默认排序",
+      "start_line": 5,
+      "end_line": 8,
+      "score": 18.25,
+      "reasons": [
+        "title:单列表,订单列,列表,单列,订单",
+        "path:orders,order",
+        "matched=10"
+      ],
+      "excerpt": "SPEC-ORD-001 — 订单列表默认排序\n`list_orders` 默认按 `created_at` 倒序返回，时间相同时按 `order_id` 倒序，保证分页结果稳定。"
+    },
+    {
+      "kind": "spec",
+      "source_path": "specs/orders.md",
+      "symbol": "SPEC-ORD-002",
+      "title": "按状态筛选",
+      "start_line": 9,
+      "end_line": 16,
+      "score": 17.09,
+      "reasons": [
+        "title:按状态,按状,状态,筛选",
+        "path:orders,order",
+        "matched=10"
+      ],
+      "excerpt": "SPEC-ORD-002 — 按状态筛选\n`list_orders` 必须支持可选参数 `status`：\n\n- 仅返回 `status` 与参数完全匹配的订单。\n- `status` 必须是 `pending`、`paid`、`shipped`、`cancelled` 之一。\n- 传入未知状态时必须抛出 `ValueError`，不能静默返回空列表。"
+    },
+    {
+      "kind": "spec",
+      "source_path": "specs/orders.md",
+      "symbol": "SPEC-ORD-004",
+      "title": "分页与兼容性",
+      "start_line": 25,
+      "end_line": 32,
+      "score": 14.71,
+      "reasons": [
+        "title:兼容,分页",
+        "path:orders,order",
+        "matched=10"
+      ],
+      "excerpt": "SPEC-ORD-004 — 分页与兼容性\n`list_orders` 在筛选后执行 `offset` / `limit` 分页：\n\n- `limit` 必须是 1 到 100 之间的整数。\n- `offset` 必须是非负整数。\n- 原有默认排序、`summarize_by_status` 和非法分页参数校验必须保持兼容。"
+    },
+    {
+      "kind": "spec",
+      "source_path": "specs/orders.md",
+      "symbol": "SPEC-ORD-005",
+      "title": "组合筛选",
+      "start_line": 33,
+      "end_line": 35,
+      "score": 8.97,
+      "reasons": [
+        "title:筛选",
+        "path:orders,order",
+        "matched=6"
+      ],
+      "excerpt": "SPEC-ORD-005 — 组合筛选\n当 `status` 与 `min_total` 同时提供时，取两个条件的交集，再按默认排序分页，不得改变任一条件的边界行为。"
+    },
+    {
+      "kind": "code",
+      "source_path": "src/order_service.py",
+      "symbol": "<module>",
+      "title": "模块 src/order_service.py",
+      "start_line": 1,
+      "end_line": 56,
+      "score": 4.07,
+      "reasons": [
+        "title:order",
+        "path:order",
+        "matched=2"
+      ],
+      "excerpt": "A tiny order-query business service used by the SDD demo.\n\nThe service is deliberately dependency-free so the reviewer can run it with a\nstock Python interpreter.  Orders are supplied by the caller; persistence\nbelongs to the host application, not to the query helper."
+    },
+    {
+      "kind": "code",
+      "source_path": "src/order_service.py",
+      "symbol": "list_orders",
+      "title": "code list_orders",
+      "start_line": 27,
+      "end_line": 47,
+      "score": 22.85,
+      "reasons": [
+        "title:list_orders,orders,order,list",
+        "symbol:list_orders,orders,order,list",
+        "path:order",
+        "matched=10"
+      ],
+      "excerpt": "def list_orders(\n    orders: Iterable[Order],\n    *,\n    status: str | None = None,\n    min_total: Decimal | str | int | None = None,\n    limit: int = 20,\n    offset: int = 0,\n) -> list[Order]:\n    \"\"\"Return orders in newest-first order.\n\n    ``status`` and ``min_total`` are accepted by the public interface but are\n    not applied yet; implementing them is the task described in specs.\n    \"\"\"\n\n    if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 100:\n        raise ValueError(\"limit must be an integer between 1 and 100\")\n    if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:\n        raise ValueError(\"offset must be a non-negative integer\")\n\n    ordered = sorted(orders, key=lambda order: (order.created_at, order.order_id), reverse=True)\n    return ordered[offset : offset + limit]"
+    },
+    {
+      "kind": "code",
+      "source_path": "src/order_service.py",
+      "symbol": "summarize_by_status",
+      "title": "code summarize_by_status",
+      "start_line": 50,
+      "end_line": 56,
+      "score": 6.83,
+      "reasons": [
+        "title:status",
+        "symbol:status",
+        "path:order",
+        "matched=3"
+      ],
+      "excerpt": "def summarize_by_status(orders: Iterable[Order]) -> dict[str, int]:\n    \"\"\"Count orders by status; used by the dashboard and regression tests.\"\"\"\n\n    summary: dict[str, int] = {}\n    for order in orders:\n        summary[order.status] = summary.get(order.status, 0) + 1\n    return summary"
+    },
+    {
+      "kind": "code",
+      "source_path": "src/order_service.py",
+      "symbol": "Order",
+      "title": "code Order",
+      "start_line": 19,
+      "end_line": 24,
+      "score": 6.69,
+      "reasons": [
+        "title:order",
+        "symbol:order",
+        "path:order",
+        "matched=3"
+      ],
+      "excerpt": "class Order:\n    order_id: str\n    customer: str\n    status: str\n    total: Decimal\n    created_at: datetime"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_regression.py",
+      "symbol": "test_min_total_zero_is_no_amount_filter",
+      "title": "test test_min_total_zero_is_no_amount_filter",
+      "start_line": 75,
+      "end_line": 80,
+      "score": 23.96,
+      "reasons": [
+        "title:min_total,amount,filter,total,min",
+        "symbol:min_total,amount,filter,total,min",
+        "path:orders,order",
+        "regression",
+        "matched=8"
+      ],
+      "excerpt": "def test_min_total_zero_is_no_amount_filter() -> None:\n    \"\"\"REGRESSION: true\n    TARGET_SPECS: SPEC-ORD-003\n    \"\"\"\n\n    assert len(list_orders(make_orders(), min_total=0)) == len(make_orders())"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "test_filter_by_min_total_excludes_smaller",
+      "title": "test test_filter_by_min_total_excludes_smaller",
+      "start_line": 38,
+      "end_line": 42,
+      "score": 21.56,
+      "reasons": [
+        "title:min_total,filter,total,min",
+        "symbol:min_total,filter,total,min",
+        "path:filters,filter,orders,order",
+        "matched=8"
+      ],
+      "excerpt": "def test_filter_by_min_total_excludes_smaller() -> None:\n    \"\"\"TARGET_SPECS: SPEC-ORD-003\"\"\"\n\n    result = list_orders(make_orders(), min_total=Decimal(\"80.50\"))\n    assert [order.order_id for order in result] == [\"O-1004\", \"O-1002\", \"O-1001\"]"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "test_filter_combined_intersection_and_order",
+      "title": "test test_filter_combined_intersection_and_order",
+      "start_line": 45,
+      "end_line": 49,
+      "score": 17.22,
+      "reasons": [
+        "title:filter,order",
+        "symbol:filter,order",
+        "path:filters,filter,orders,order",
+        "matched=9"
+      ],
+      "excerpt": "def test_filter_combined_intersection_and_order() -> None:\n    \"\"\"TARGET_SPECS: SPEC-ORD-005\"\"\"\n\n    result = list_orders(make_orders(), status=\"paid\", min_total=Decimal(\"50\"))\n    assert [order.order_id for order in result] == [\"O-1001\"]"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "test_negative_min_total_rejected",
+      "title": "test test_negative_min_total_rejected",
+      "start_line": 59,
+      "end_line": 63,
+      "score": 16.6,
+      "reasons": [
+        "title:min_total,total,min",
+        "symbol:min_total,total,min",
+        "path:filters,filter,orders,order",
+        "matched=6"
+      ],
+      "excerpt": "def test_negative_min_total_rejected() -> None:\n    \"\"\"TARGET_SPECS: SPEC-ORD-003\"\"\"\n\n    with pytest.raises(ValueError):\n        list_orders(make_orders(), min_total=Decimal(\"-0.01\"))"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_regression.py",
+      "symbol": "test_pagination_preserves_order",
+      "title": "test test_pagination_preserves_order",
+      "start_line": 36,
+      "end_line": 44,
+      "score": 14.9,
+      "reasons": [
+        "title:pagination,order",
+        "symbol:pagination,order",
+        "path:orders,order",
+        "regression",
+        "matched=7"
+      ],
+      "excerpt": "def test_pagination_preserves_order() -> None:\n    \"\"\"REGRESSION: true\n    TARGET_SPECS: SPEC-ORD-004\n    \"\"\"\n\n    first = list_orders(make_orders(), limit=2, offset=0)\n    second = list_orders(make_orders(), limit=2, offset=2)\n    assert [order.order_id for order in first] == [\"O-1005\", \"O-1004\"]\n    assert [order.order_id for order in second] == [\"O-1003\", \"O-1002\"]"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "test_filter_by_status_returns_only_matching",
+      "title": "test test_filter_by_status_returns_only_matching",
+      "start_line": 31,
+      "end_line": 35,
+      "score": 13.92,
+      "reasons": [
+        "title:filter,status",
+        "symbol:filter,status",
+        "path:filters,filter,orders,order",
+        "matched=6"
+      ],
+      "excerpt": "def test_filter_by_status_returns_only_matching() -> None:\n    \"\"\"TARGET_SPECS: SPEC-ORD-002\"\"\"\n\n    result = list_orders(make_orders(), status=\"paid\")\n    assert [order.order_id for order in result] == [\"O-1003\", \"O-1001\"]"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "<module>",
+      "title": "模块 tests/test_orders_filters.py",
+      "start_line": 1,
+      "end_line": 63,
+      "score": 12.14,
+      "reasons": [
+        "title:filters,filter,orders,order",
+        "path:filters,filter,orders,order",
+        "matched=5"
+      ],
+      "excerpt": "Target tests for the new status / minimum-amount filters.\n\nThese tests describe the behaviour required by the task and intentionally fail\nagainst the before snapshot because the two filters are not implemented yet."
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "make_orders",
+      "title": "test make_orders",
+      "start_line": 21,
+      "end_line": 28,
+      "score": 10.62,
+      "reasons": [
+        "title:orders,order",
+        "symbol:orders,order",
+        "path:filters,filter,orders,order",
+        "matched=3"
+      ],
+      "excerpt": "def make_orders() -> list[Order]:\n    return [\n        Order(\"O-1001\", \"alice\", \"paid\", Decimal(\"120.00\"), datetime(2026, 10, 1, 9, 0)),\n        Order(\"O-1002\", \"bob\", \"pending\", Decimal(\"80.50\"), datetime(2026, 10, 2, 10, 0)),\n        Order(\"O-1003\", \"carol\", \"paid\", Decimal(\"45.00\"), datetime(2026, 10, 3, 11, 0)),\n        Order(\"O-1004\", \"dave\", \"shipped\", Decimal(\"300.00\"), datetime(2026, 10, 4, 12, 0)),\n        Order(\"O-1005\", \"eve\", \"cancelled\", Decimal(\"20.00\"), datetime(2026, 10, 5, 13, 0)),\n    ]"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_regression.py",
+      "symbol": "make_orders",
+      "title": "test make_orders",
+      "start_line": 17,
+      "end_line": 24,
+      "score": 9.82,
+      "reasons": [
+        "title:orders,order",
+        "symbol:orders,order",
+        "path:orders,order",
+        "matched=3"
+      ],
+      "excerpt": "def make_orders() -> list[Order]:\n    return [\n        Order(\"O-1001\", \"alice\", \"paid\", Decimal(\"120.00\"), datetime(2026, 10, 1, 9, 0)),\n        Order(\"O-1002\", \"bob\", \"pending\", Decimal(\"80.50\"), datetime(2026, 10, 2, 10, 0)),\n        Order(\"O-1003\", \"carol\", \"paid\", Decimal(\"45.00\"), datetime(2026, 10, 3, 11, 0)),\n        Order(\"O-1004\", \"dave\", \"shipped\", Decimal(\"300.00\"), datetime(2026, 10, 4, 12, 0)),\n        Order(\"O-1005\", \"eve\", \"cancelled\", Decimal(\"20.00\"), datetime(2026, 10, 5, 13, 0)),\n    ]"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_filters.py",
+      "symbol": "test_invalid_status_rejected",
+      "title": "test test_invalid_status_rejected",
+      "start_line": 52,
+      "end_line": 56,
+      "score": 8.96,
+      "reasons": [
+        "title:status",
+        "symbol:status",
+        "path:filters,filter,orders,order",
+        "matched=4"
+      ],
+      "excerpt": "def test_invalid_status_rejected() -> None:\n    \"\"\"TARGET_SPECS: SPEC-ORD-002\"\"\"\n\n    with pytest.raises(ValueError):\n        list_orders(make_orders(), status=\"refunded\")"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_regression.py",
+      "symbol": "test_invalid_limit_rejected",
+      "title": "test test_invalid_limit_rejected",
+      "start_line": 47,
+      "end_line": 55,
+      "score": 8.76,
+      "reasons": [
+        "title:limit",
+        "symbol:limit",
+        "path:orders,order",
+        "regression",
+        "matched=4"
+      ],
+      "excerpt": "def test_invalid_limit_rejected() -> None:\n    \"\"\"REGRESSION: true\n    TARGET_SPECS: SPEC-ORD-004\n    \"\"\"\n\n    with pytest.raises(ValueError):\n        list_orders(make_orders(), limit=0)\n    with pytest.raises(ValueError):\n        list_orders(make_orders(), limit=101)"
+    },
+    {
+      "kind": "test",
+      "source_path": "tests/test_orders_regression.py",
+      "symbol": "test_negative_offset_rejected",
+      "title": "test test_negative_offset_rejected",
+      "start_line": 58,
+      "end_line": 64,
+      "score": 8.66,
+      "reasons": [
+        "title:offset",
+        "symbol:offset",
+        "path:orders,order",
+        "regression",
+        "matched=4"
+      ],
+      "excerpt": "def test_negative_offset_rejected() -> None:\n    \"\"\"REGRESSION: true\n    TARGET_SPECS: SPEC-ORD-004\n    \"\"\"\n\n    with pytest.raises(ValueError):\n        list_orders(make_orders(), offset=-1)"
+    }
+  ],
+  "stats": {
+    "query_terms": [
+      "list_orders",
+      "pagination",
+      "min_total",
+      "filtering",
+      "listing",
+      "minimum",
+      "filters",
+      "orders",
+      "status",
+      "amount",
+      "filter",
+      "offset",
+      "order",
+      "state",
+      "total",
+      "limit",
+      "list",
+      "page",
+      "min",
+      "为订单",
+      "订单列",
+      "单列表",
+      "列表增",
+      "表增加",
+      "增加按",
+      "加按状",
+      "按状态",
+      "状态和",
+      "态和最",
+      "和最低",
+      "最低金",
+      "低金额",
+      "金额筛",
+      "额筛选",
+      "需保持",
+      "保持分",
+      "持分页",
+      "分页兼",
+      "页兼容",
+      "为订"
+    ],
+    "candidate_rows": 24,
+    "indexed_chunks": 24,
+    "selected": {
+      "specs": 5,
+      "code": 4,
+      "tests": 12
+    },
+    "store_mode": "seekdb-server:gw0.apac.seekdb.ai:2881/d0_t2ywT0r3AcT1"
+  }
+}
