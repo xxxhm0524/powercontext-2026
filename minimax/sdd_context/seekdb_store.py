@@ -179,7 +179,12 @@ class SeekDBMaterialStore:
             self.connect()
             cursor = self._conn.cursor()
             try:
-                cursor.execute(sql, tuple(params))
+                if self._mode.startswith("seekdb-embedded"):
+                    from pyseekdb.client.sql_utils import render_sql_with_params
+
+                    cursor.execute(render_sql_with_params(sql, tuple(params)))
+                else:
+                    cursor.execute(sql, tuple(params))
                 if cursor.description is None:
                     return []
                 rows = cursor.fetchall()
@@ -251,10 +256,17 @@ class SeekDBMaterialStore:
         if term_rows:
             cursor = self._conn.cursor()
             try:
-                cursor.executemany(
-                    "INSERT INTO sdd_terms (term, chunk_id, tf) VALUES (%s, %s, %s)",
-                    term_rows,
-                )
+                if self._mode.startswith("seekdb-embedded"):
+                    from pyseekdb.client.sql_utils import render_sql_with_params
+
+                    insert_sql = "INSERT INTO sdd_terms (term, chunk_id, tf) VALUES (%s, %s, %s)"
+                    for row in term_rows:
+                        cursor.execute(render_sql_with_params(insert_sql, row))
+                else:
+                    cursor.executemany(
+                        "INSERT INTO sdd_terms (term, chunk_id, tf) VALUES (%s, %s, %s)",
+                        term_rows,
+                    )
             finally:
                 cursor.close()
 
