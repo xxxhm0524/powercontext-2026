@@ -285,6 +285,13 @@ class MiniMaxClient:
     def _raise_for_status(response: httpx.Response) -> None:
         if response.status_code >= 400:
             body = response.text[:1000]
+            if response.status_code == 402 or "insufficient_balance_error" in body:
+                raise MiniMaxError(
+                    "MiniMax 账户余额不足（1008）：请确认 Mplan explore 权益已兑换到当前团队空间，"
+                    f"或更换有余额的 API Key。原始响应: {body}"
+                )
+            if response.status_code == 401:
+                raise MiniMaxError(f"MiniMax API Key 无效或不属于当前空间（401）: {body}")
             raise MiniMaxError(f"MiniMax HTTP {response.status_code}: {body}")
 
 

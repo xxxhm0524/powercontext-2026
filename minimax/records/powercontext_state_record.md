@@ -5,17 +5,17 @@
 
 | 时间 | 动作 | scope | entry | task | status |
 | --- | --- | --- | --- | --- | --- |
-| 2026-10-30T13:37:17.926245+00:00 | open | `scp_05nz75zarr3ves7xd0v2k7daff` | `` |  |  |
-| 2026-10-30T13:37:17.929896+00:00 | load_miss | `scp_05nz75zarr3ves7xd0v2k7daff` | `` | TASK-ORDER-FILTER-001 |  |
-| 2026-10-30T13:37:17.946471+00:00 | save | `scp_05nz75zarr3ves7xd0v2k7daff` | `mem_ent_beb8f3577e5744408c7eaf22230ccd68` | TASK-ORDER-FILTER-001 | context_ready |
-| 2026-10-30T13:37:19.231959+00:00 | open | `scp_05nz75zarr3ves7xd0v2k7daff` | `` |  |  |
-| 2026-10-30T13:37:19.243067+00:00 | load_hit | `scp_05nz75zarr3ves7xd0v2k7daff` | `` | TASK-ORDER-FILTER-001 |  |
-| 2026-10-30T13:37:27.428451+00:00 | open | `scp_05nz75zarr3ves7xd0v2k7daff` | `` |  |  |
-| 2026-10-30T13:37:27.441408+00:00 | load_hit | `scp_05nz75zarr3ves7xd0v2k7daff` | `` | TASK-ORDER-FILTER-001 |  |
-| 2026-10-30T13:37:49.200023+00:00 | open | `scp_05nz75zarr3ves7xd0v2k7daff` | `` |  |  |
-| 2026-10-30T13:37:49.212300+00:00 | load_hit | `scp_05nz75zarr3ves7xd0v2k7daff` | `` | TASK-ORDER-FILTER-001 |  |
-| 2026-10-30T13:37:49.236381+00:00 | save | `scp_05nz75zarr3ves7xd0v2k7daff` | `mem_ent_443532151ddc44fd94dd96619733bfd0` | TASK-ORDER-FILTER-001 | verified |
-| 2026-10-30T13:37:50.525873+00:00 | open | `scp_05nz75zarr3ves7xd0v2k7daff` | `` |  |  |
-| 2026-10-30T13:37:50.538232+00:00 | load_hit | `scp_05nz75zarr3ves7xd0v2k7daff` | `` | TASK-ORDER-FILTER-001 |  |
+| 2026-10-30T13:48:14.415544+00:00 | open | `scp_4eh24qarc9svgvdgvnbee5z2vq` | `` |  |  |
+| 2026-10-30T13:48:14.419717+00:00 | load_miss | `scp_4eh24qarc9svgvdgvnbee5z2vq` | `` | TASK-ORDER-FILTER-001 |  |
+| 2026-10-30T13:48:14.440245+00:00 | save | `scp_4eh24qarc9svgvdgvnbee5z2vq` | `mem_ent_9b88f158ab55473193270fbc9a6f3a55` | TASK-ORDER-FILTER-001 | context_ready |
+| 2026-10-30T13:48:15.729757+00:00 | open | `scp_4eh24qarc9svgvdgvnbee5z2vq` | `` |  |  |
+| 2026-10-30T13:48:15.744670+00:00 | load_hit | `scp_4eh24qarc9svgvdgvnbee5z2vq` | `` | TASK-ORDER-FILTER-001 |  |
+| 2026-10-30T13:48:20.681431+00:00 | open | `scp_4eh24qarc9svgvdgvnbee5z2vq` | `` |  |  |
+| 2026-10-30T13:48:20.694958+00:00 | load_hit | `scp_4eh24qarc9svgvdgvnbee5z2vq` | `` | TASK-ORDER-FILTER-001 |  |
+| 2026-10-30T13:49:07.237052+00:00 | open | `scp_4eh24qarc9svgvdgvnbee5z2vq` | `` |  |  |
+| 2026-10-30T13:49:07.250078+00:00 | load_hit | `scp_4eh24qarc9svgvdgvnbee5z2vq` | `` | TASK-ORDER-FILTER-001 |  |
+| 2026-10-30T13:49:07.276338+00:00 | save | `scp_4eh24qarc9svgvdgvnbee5z2vq` | `mem_ent_9964a41aeabc4e50a835ed97e8919598` | TASK-ORDER-FILTER-001 | verified |
+| 2026-10-30T13:49:08.662104+00:00 | open | `scp_4eh24qarc9svgvdgvnbee5z2vq` | `` |  |  |
+| 2026-10-30T13:49:08.674904+00:00 | load_hit | `scp_4eh24qarc9svgvdgvnbee5z2vq` | `` | TASK-ORDER-FILTER-001 |  |
 
 说明：`save` 是写入，`load_hit` 是另一个进程中的重启读取；两次 `state-show` 均由独立 CLI 进程执行。

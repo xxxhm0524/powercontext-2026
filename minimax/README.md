@@ -171,6 +171,14 @@ python scripts/capture_minimax_dev_record.py \
 开发记录会落到 `records/minimax_dev_record.jsonl`，再由
 `python scripts/build_records.py` 生成可读的 `records/minimax_dev_record.md`。
 
+### 常见错误
+
+| 错误 | 含义 | 处理 |
+| --- | --- | --- |
+| `401` | API Key 无效，或 Key 与提交的团队空间不一致 | 在同一个团队空间下重新创建 API Key |
+| `402 / insufficient_balance_error (1008)` | 账户余额不足，Mplan explore 权益未生效 | 检查领取邮箱里的权益码，在 MiniMax 平台「套餐/兑换」中兑换；确认权益发到的是提交的团队 ID |
+| `404 / 2069` | 模型已下线 | 默认会自动回退 `M3.1-Flash → M3 → M2.7`，无需手工处理 |
+
 ## 6. HTTP 入口（可选）
 
 ```bash
