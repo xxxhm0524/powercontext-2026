@@ -27,7 +27,7 @@ from .http_ssl import build_ssl_context
 class MiniMaxConfig:
     api_key: str = ""
     base_url: str = "https://api.minimaxi.com/anthropic"
-    model: str = "MiniMax-M2.5"
+    model: str = "MiniMax-M3.1-Flash"
     api_style: str = "anthropic"  # anthropic | native | openai
     timeout_seconds: float = 120.0
 
@@ -94,14 +94,38 @@ class MiniMaxClient:
             )
         started = time.perf_counter()
         if self.config.api_style == "anthropic":
-            result = self._chat_anthropic(messages, system=system, temperature=temperature, max_tokens=max_tokens)
+            result = self._chat_with_model_fallback(
+                self._chat_anthropic, messages, system=system, temperature=temperature, max_tokens=max_tokens
+            )
         elif self.config.api_style == "openai":
-            result = self._chat_openai(messages, system=system, temperature=temperature, max_tokens=max_tokens)
+            result = self._chat_with_model_fallback(
+                self._chat_openai, messages, system=system, temperature=temperature, max_tokens=max_tokens
+            )
         else:
-            result = self._chat_native(messages, system=system, temperature=temperature, max_tokens=max_tokens)
+            result = self._chat_with_model_fallback(
+                self._chat_native, messages, system=system, temperature=temperature, max_tokens=max_tokens
+            )
         result.latency_ms = round((time.perf_counter() - started) * 1000, 2)
         self._record(messages, system, result, purpose=purpose)
         return result
+
+    def _chat_with_model_fallback(self, method, messages, *, system, temperature, max_tokens) -> ChatResult:
+        requested = self.config.model
+        candidates = _model_candidates(requested)
+        last_error: MiniMaxError | None = None
+        for model in candidates:
+            self.config.model = model
+            try:
+                result = method(messages, system=system, temperature=temperature, max_tokens=max_tokens)
+                result.model = model
+                return result
+            except MiniMaxError as error:
+                if _model_unavailable(error):
+                    last_error = error
+                    continue
+                raise
+        self.config.model = requested
+        raise last_error or MiniMaxError("no usable MiniMax model")
 
     # ------------------------------------------------------------------ APIs
     def _chat_native(
@@ -282,3 +306,14 @@ def _extract_native_content(data: dict[str, Any]) -> str:
         if isinstance(data.get(key), str):
             return str(data[key])
     return ""
+
+
+def _model_candidates(configured: str) -> list[str]:
+    candidates = [configured, "MiniMax-M3.1-Flash", "MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.7-highspeed"]
+    seen: set[str] = set()
+    return [model for model in candidates if model and not (model in seen or seen.add(model))]
+
+
+def _model_unavailable(error: Exception) -> bool:
+    text = str(error).lower()
+    return "2069" in text or "no longer available" in text or "model not found" in text

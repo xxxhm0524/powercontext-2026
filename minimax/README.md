@@ -130,7 +130,7 @@ MiniMax 平台 Key 后运行：
 ```bash
 export MINIMAX_API_KEY='...'
 export MINIMAX_BASE_URL='https://api.minimaxi.com/anthropic'
-export MINIMAX_MODEL='MiniMax-M2.5'
+export MINIMAX_MODEL='MiniMax-M3.1-Flash'
 python scripts/run_validation.py --use-minimax
 ```
 
@@ -151,7 +151,7 @@ prompt、响应、usage 和延迟，并把模型返回的 unified diff 应用到
 
 ```bash
 export MINIMAX_API_KEY='...'                 # 必填
-export MINIMAX_MODEL='MiniMax-M2.5'          # 默认
+export MINIMAX_MODEL='MiniMax-M3.1-Flash'          # 默认
 export MINIMAX_BASE_URL='https://api.minimaxi.com/anthropic'
 export MINIMAX_API_STYLE='anthropic'         # anthropic | native | openai
 ```
