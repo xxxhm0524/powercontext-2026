@@ -4,8 +4,8 @@
 
 ```bash
 python scripts/capture_minimax_dev_record.py \
-  --context validation/workspace/context_before.json \
-  --before-root validation/workspace/demo_project
+  --context validation/expected_context.json \
+  --before-root validation/snapshots/before/demo_project
 ```
 
 然后重新运行 `python scripts/run_validation.py --use-minimax`。）
