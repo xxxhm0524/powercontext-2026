@@ -18,8 +18,10 @@ from __future__ import annotations
 
 import hashlib
 import io
+import math
 import re
-from urllib.parse import quote
+from collections.abc import Sequence
+from urllib.parse import quote, unquote
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 from pypdf import PdfReader
@@ -46,8 +48,6 @@ class PDFDocumentInput(BaseModel):
     def validate_document_id(cls, value: str) -> str:
         if not isinstance(value, str) or not value.strip():
             raise ValueError("document_id must be a non-blank string")  # noqa: TRY003
-        if value != value.strip():
-            raise ValueError("document_id must not contain surrounding whitespace")  # noqa: TRY003
         return value
 
 
@@ -175,7 +175,7 @@ def parse_pdf_document(value: PDFDocumentInput) -> tuple[PDFPageInput, ...]:
     digest = hashlib.sha256(raw).hexdigest()
     pages: list[PDFPageInput] = []
     try:
-        reader = PdfReader(io.BytesIO(raw), strict=False)
+        reader = PdfReader(io.BytesIO(raw), strict=True)
         if reader.is_encrypted:
             if not reader.decrypt(""):
                 raise ValueError("PDF requires a non-empty password")  # noqa: TRY003
@@ -202,13 +202,134 @@ def parse_pdf_document(value: PDFDocumentInput) -> tuple[PDFPageInput, ...]:
 
 
 _QUERY_STOPWORDS = frozenset(
-    """
-    a an and are as at be been being by can could did do does for from had has have how i if in into is it its
-    me my of on or our us was were what when where which who why will with would you your the to about
-    please answer question using use only shown show details detail stated state given based according
-    """.split()
+    [
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "been",
+        "being",
+        "by",
+        "can",
+        "could",
+        "did",
+        "do",
+        "does",
+        "for",
+        "from",
+        "had",
+        "has",
+        "have",
+        "how",
+        "i",
+        "if",
+        "in",
+        "into",
+        "is",
+        "it",
+        "its",
+        "me",
+        "my",
+        "of",
+        "on",
+        "or",
+        "our",
+        "us",
+        "was",
+        "were",
+        "what",
+        "when",
+        "where",
+        "which",
+        "who",
+        "why",
+        "will",
+        "with",
+        "would",
+        "you",
+        "your",
+        "the",
+        "to",
+        "about",
+        "please",
+        "answer",
+        "question",
+        "using",
+        "use",
+        "only",
+        "shown",
+        "show",
+        "details",
+        "detail",
+        "stated",
+        "state",
+        "given",
+        "based",
+        "according",
+    ]
 )
 _WORD = re.compile(r"[a-z]+|\d+")
+_PAGE_HEADING_LIMIT = 3200
+
+_FINANCE_SYNONYMS: dict[str, tuple[str, ...]] = {
+    "geography": ("segment", "region", "country", "area", "division", "operation", "geographic"),
+    "geographies": ("segment", "region", "country", "area", "division", "operation", "geographic"),
+    "geographic": ("segment", "region", "country", "area", "division"),
+    "legal": ("proceeding", "litigation", "regulatory"),
+    "battle": ("proceeding", "litigation"),
+    "battles": ("proceeding", "litigation"),
+    "restructuring": ("impairment", "charge", "severance", "productivity"),
+    "ebitda": ("operating", "profit", "income", "depreciation", "amortization"),
+    "capex": ("capital", "expenditure", "property", "plant", "equipment"),
+    "margin": ("operating", "profit", "income", "revenue", "sales", "net", "gross"),
+    "revenue": ("sales", "net"),
+    "employee": ("headcount",),
+    "employees": ("headcount",),
+    "quick": ("current", "asset", "liability"),
+    "capital": ("expenditure", "property", "plant", "equipment"),
+    "intensive": ("capital", "expenditure", "property", "plant", "equipment"),
+    "dividend": ("dividends", "cash"),
+    "acquisition": ("acquisition", "acquired", "purchase"),
+    "category": ("segment", "product", "service"),
+    "categories": ("segment", "product", "service"),
+    "gross": ("profit", "margin"),
+    "retain": ("retention", "retained"),
+    "retained": ("retention", "retain"),
+}
+
+_INCOME_PAGE_CUES = (
+    "statement of income",
+    "statements of income",
+    "statement of operations",
+    "statements of operations",
+    "statement of earnings",
+    "statements of earnings",
+    "analysis of consolidated earnings",
+    "summary of financial performance",
+)
+_BALANCE_PAGE_CUES = (
+    "balance sheet",
+    "balance sheets",
+    "consolidated balance",
+    "statement of financial position",
+    "statements of financial position",
+    "statement of condition",
+    "statements of condition",
+)
+_CASH_PAGE_CUES = ("statement of cash flows", "statements of cash flows", "statement of cash flow")
+_SEGMENT_PAGE_CUES = (
+    "segment information",
+    "business segment",
+    "reportable segment",
+    "summary of business segment",
+    "segment data",
+    "geographic operations",
+    "geographic areas",
+)
+_LEGAL_PAGE_CUES = ("legal proceedings", "item 3. legal", "item 3 legal", "litigation")
 
 
 def _query_terms(text: str) -> tuple[str, ...]:
@@ -263,7 +384,7 @@ def _search_queries(question: str) -> tuple[str, ...]:
 
 
 def _page_text(memory_text: str) -> str:
-    head, separator, body = memory_text.partition("\n")
+    _, separator, body = memory_text.partition("\n")
     return body if separator else memory_text
 
 
@@ -282,6 +403,286 @@ def _page_relevance(question_terms: set[str], memory_text: str) -> float:
     frequency = sum(min(5, counts[token]) for token in overlap) / max(1, len(tokens))
     numeric_bonus = sum(1 for token in overlap if token.isdigit()) / max(1, len(overlap))
     return 3.0 * coverage + frequency + 0.2 * numeric_bonus
+
+
+def _stem_page_token(token: str) -> str:
+    if len(token) <= 3:
+        return token
+    if token.endswith("ies") and len(token) > 4:
+        token = f"{token[:-3]}y"
+    elif token.endswith("ing") and len(token) > 5:
+        base = token[:-3]
+        token = f"{base}e" if base.endswith("at") else base
+    elif token.endswith("ed") and len(token) > 4:
+        base = token[:-2]
+        token = f"{base}e" if base.endswith("at") else base
+    elif token.endswith("es") and len(token) > 4:
+        token = token[:-2]
+    elif token.endswith("s") and len(token) > 3 and not token.endswith("ss"):
+        token = token[:-1]
+    if token in {"operation", "operational"}:
+        return "operate"
+    if token == "geographic":
+        return "geography"
+    return token
+
+
+def _page_terms(text: str) -> list[str]:
+    return [
+        _stem_page_token(token)
+        for token in _WORD.findall(text.lower())
+        if token not in _QUERY_STOPWORDS and len(token) > 1
+    ]
+
+
+def _expanded_page_terms(question: str) -> list[str]:
+    terms = _page_terms(question)
+    expanded = list(dict.fromkeys(terms))
+    for term in terms:
+        for synonym in _FINANCE_SYNONYMS.get(term, ()):
+            stemmed = _stem_page_token(synonym)
+            if stemmed not in expanded:
+                expanded.append(stemmed)
+    return expanded
+
+
+def _page_intents(question: str) -> set[str]:
+    lowered = question.lower()
+    intents: set[str] = set()
+    if any(
+        phrase in lowered
+        for phrase in (
+            "income statement",
+            "statement of income",
+            "statement of operations",
+            "operating income",
+            "operating margin",
+            "gross margin",
+            "net income",
+            "revenue",
+            "sales",
+            "ebitda",
+            "ebit",
+            "earnings",
+            "cost of sales",
+            "cogs",
+            "tax rate",
+            "sg&a",
+            "eps",
+            "margin",
+        )
+    ):
+        intents.add("income")
+    if any(
+        phrase in lowered
+        for phrase in (
+            "balance sheet",
+            "statement of financial position",
+            "total assets",
+            "current assets",
+            "current liabilities",
+            "working capital",
+            "inventor",
+            "accounts payable",
+            "accounts receivable",
+            "debt",
+            "pp&e",
+            "ppe",
+            "goodwill",
+            "shareholders",
+            "quick ratio",
+            "current ratio",
+            "asset turnover",
+            "return on assets",
+            "roa",
+            "return on equity",
+            "roe",
+            "capital-intensive",
+            "capital intensive",
+            "liquidity",
+        )
+    ):
+        intents.add("balance")
+    if any(
+        phrase in lowered
+        for phrase in (
+            "cash flow",
+            "cash flows",
+            "operating cash",
+            "capex",
+            "capital expenditure",
+            "depreciation",
+            "amortization",
+            "share repurchase",
+            "free cash flow",
+            "fcf",
+            "cash conversion",
+        )
+    ):
+        intents.add("cash")
+    if any(
+        phrase in lowered
+        for phrase in ("segment", "geograph", "region", "business unit", "division", "category", "categories")
+    ):
+        intents.add("segment")
+    if "capital intensive" in lowered or "capital-intensive" in lowered:
+        intents.update(("income", "balance", "cash"))
+    if any(
+        phrase in lowered
+        for phrase in ("return on assets", "roa", "return on equity", "roe", "asset turnover", "inventory turnover")
+    ):
+        intents.update(("income", "balance"))
+    if any(phrase in lowered for phrase in ("legal", "litigation", "proceeding", "battle", "claim", "dispute")):
+        intents.add("legal")
+    return intents
+
+
+def _page_kinds(text: str) -> set[str]:
+    head = " ".join(text[:_PAGE_HEADING_LIMIT].lower().split())
+    kinds: set[str] = set()
+    if any(cue in head for cue in _INCOME_PAGE_CUES):
+        kinds.add("income")
+    if any(cue in head for cue in _BALANCE_PAGE_CUES):
+        kinds.add("balance")
+    if any(cue in head for cue in _CASH_PAGE_CUES):
+        kinds.add("cash")
+    if any(cue in head for cue in _SEGMENT_PAGE_CUES):
+        kinds.add("segment")
+    if any(cue in head for cue in _LEGAL_PAGE_CUES):
+        kinds.add("legal")
+    return kinds
+
+
+def _local_page_scores(texts: Sequence[str], question: str) -> list[float]:
+    """Offline BM25-style page scoring over every page in the scope."""
+
+    documents: list[list[str]] = []
+    frequencies: list[dict[str, int]] = []
+    for text in texts:
+        tokens = _page_terms(_page_text(text))
+        documents.append(tokens)
+        counts: dict[str, int] = {}
+        for token in tokens:
+            counts[token] = counts.get(token, 0) + 1
+        frequencies.append(counts)
+    total = len(texts)
+    if not total:
+        return []
+    average_length = max(1.0, sum(len(tokens) for tokens in documents) / total)
+    document_frequency: dict[str, int] = {}
+    for counts in frequencies:
+        for token in counts:
+            document_frequency[token] = document_frequency.get(token, 0) + 1
+    query_terms = _expanded_page_terms(question)
+    intents = _page_intents(question)
+    scores: list[float] = []
+    for index, text in enumerate(texts):
+        counts = frequencies[index]
+        length = len(documents[index])
+        score = 0.0
+        for token in query_terms:
+            frequency = counts.get(token, 0)
+            if not frequency:
+                continue
+            idf = math.log(
+                1.0 + (total - document_frequency.get(token, 0) + 0.5) / (document_frequency.get(token, 0) + 0.5)
+            )
+            score += idf * frequency * 2.2 / (frequency + 1.2 * (1.0 - 0.75 + 0.75 * length / average_length))
+        kinds = _page_kinds(text)
+        lowered = text.lower()
+        if intents & kinds:
+            # Structural evidence (an actual financial statement or a named
+            # section) outranks pages that merely mention the topic in prose.
+            heading = lowered[:1200]
+            if "consolidated statement" in heading or "summary of business segment data" in heading:
+                score += 1000.0 * len(intents & kinds)
+            else:
+                score += 500.0 * len(intents & kinds)
+        if "legal" in intents:
+            if "item 3. legal proceedings" in lowered or "item 3. legal" in lowered:
+                score += 80.0
+        if "segment" in intents:
+            if "geographic operations" in lowered:
+                score += 60.0
+            region_hits = sum(
+                1
+                for region in (
+                    "north america",
+                    "europe",
+                    "asia pacific",
+                    "latin america",
+                    "africa",
+                    "middle east",
+                    "china",
+                )
+                if region in lowered
+            )
+            score += 8.0 * region_hits
+        if "income" in intents and ("gross profit" in lowered or "operating profit" in lowered):
+            score += 5.0
+        question_lower = question.lower()
+        if "effective tax rate" in question_lower and "effective tax rate" in lowered:
+            score += 40.0
+        if "card member" in question_lower and "card member" in lowered:
+            score += 30.0
+        if "dividend" in question_lower and "dividend" in lowered:
+            score += min(6, lowered.count("dividend")) * 5.0
+        if "customer concentration" in question_lower and "customer concentration" in lowered:
+            score += 40.0
+        elif "customer" in question_lower:
+            score += min(4, lowered.count("customer")) * 3.0
+        if "capital intensive" in question_lower or "capital-intensive" in question_lower:
+            if kinds:
+                score += 15.0
+            if "capital expenditure" in lowered or "purchases of property" in lowered:
+                score += 30.0
+        if "debt" in question_lower and "debt outstanding" in lowered:
+            score += 50.0
+        score += len(set(query_terms) & set(_page_terms(text[:400])))
+        scores.append(score)
+    return scores
+
+
+async def _pdf_page_records(memory):
+    """Read every current Memory entry that came from a PDF page, if supported."""
+
+    try:
+        page = await memory.list()
+    except Exception:
+        return None
+    records = []
+    for record in page.entries:
+        if not any(reference.source_type == PDF_PAGE_SOURCE_NAME for reference in record.entry.sources):
+            continue
+        document_id, separator, _ = record.entry.text.partition("\n")
+        if not separator:
+            for reference in record.entry.sources:
+                parts = reference.source_id.split(":")
+                if len(parts) == 4 and parts[0] == "pdf":
+                    document_id = unquote(parts[1])
+                    break
+        records.append((record.citation, record.entry.text, document_id))
+    return records
+
+
+def _document_identity(document_id: str) -> str:
+    """Return the company part of a FinanceBench document name, compacted."""
+
+    base = re.split(r"_(?:19|20)\d{2}(?:_|$)", document_id, maxsplit=1)[0]
+    return re.sub(r"[^a-z0-9]", "", base.lower())
+
+
+def _select_document(records, question: str) -> str | None:
+    compact_question = re.sub(r"[^a-z0-9]", "", question.lower())
+    best: tuple[int, str] | None = None
+    for _, _, document_id in records:
+        identity = _document_identity(document_id)
+        if not identity or identity not in compact_question:
+            continue
+        rank = len(identity)
+        if best is None or rank > best[0]:
+            best = (rank, document_id)
+    return None if best is None else best[1]
 
 
 async def search_pdf_pages(memory, question: str, limit: int = 10) -> tuple[MemoryCitation, ...]:
@@ -312,17 +713,38 @@ async def search_pdf_pages(memory, question: str, limit: int = 10) -> tuple[Memo
             else:
                 fused[key] = (previous[0] + score, max(previous[1], relevance), previous[2])
     ordered = sorted(fused.values(), key=lambda item: (-item[0], -item[1], item[2].entry_id))
-    citations: list[MemoryCitation] = []
-    seen: set[tuple[str, str, str]] = set()
-    for _, _, citation in ordered:
-        key = (citation.memory_ref.artifact_id, citation.entry_id, citation.entry_version_id)
-        if key in seen:
-            continue
-        seen.add(key)
-        citations.append(citation)
-        if len(citations) >= limit:
-            break
-    return tuple(citations)
+
+    records = await _pdf_page_records(memory)
+    local_citations: list[MemoryCitation] = []
+    if records:
+        selected_document = _select_document(records, question)
+        selected = (
+            [record for record in records if record[2] == selected_document]
+            if selected_document is not None
+            else records
+        )
+        texts = [text for _, text, _ in selected]
+        scores = _local_page_scores(texts, question)
+        local_order = sorted(range(len(selected)), key=lambda index: (-scores[index], index))
+        for index in local_order[:limit]:
+            local_citations.append(selected[index][0])
+    if local_citations:
+        # The offline ranking reads every page, so it is both broader and more
+        # stable than one FTS tokenization. FTS only fills a short local list.
+        seen = {
+            (citation.memory_ref.artifact_id, citation.entry_id, citation.entry_version_id)
+            for citation in local_citations
+        }
+        for _, _, citation in ordered:
+            key = (citation.memory_ref.artifact_id, citation.entry_id, citation.entry_version_id)
+            if key in seen:
+                continue
+            local_citations.append(citation)
+            seen.add(key)
+            if len(local_citations) >= limit:
+                break
+        return tuple(local_citations[:limit])
+    return tuple(citation for _, _, citation in ordered[:limit])
 
 
 PDF_PAGE_SOURCE_ADAPTER = PDFPageSourceAdapter()

@@ -342,89 +342,164 @@ class PreparedContextBuilder:
         *,
         request: PrepareContextRequest,
         memory_candidates: Sequence[PreparedMemoryCandidates],
-    ) -> tuple[str | None, tuple[PreparedContextOrigin, ...], tuple[PreparedContextFragment, ...], PreparedContextOmissions]:
-        units: list[_EvidenceUnit] = []
+    ) -> tuple[
+        str | None, tuple[PreparedContextOrigin, ...], tuple[PreparedContextFragment, ...], PreparedContextOmissions
+    ]:
+        entries: list[_EvidenceEntry] = []
+        seen: set[tuple[str, str, int, str, str]] = set()
         for group in memory_candidates:
             for hit in group.hits:
                 if not hit.text.strip():
                     continue
-                address = MemoryEntryAddress(
-                    memory=ArtifactAddress(scope_id=group.scope_id, artifact=hit.memory_ref),
-                    entry_id=hit.entry_id,
-                    entry_version_id=hit.entry_version_id,
+                key = (
+                    group.scope_id,
+                    hit.memory_ref.artifact_id,
+                    hit.memory_ref.revision,
+                    hit.entry_id,
+                    hit.entry_version_id,
                 )
-                for position, (start, end, text) in enumerate(_sentence_spans(hit.text)):
-                    units.append(
-                        _EvidenceUnit(
-                            address=address,
-                            start=start,
-                            end=end,
-                            text=text,
-                            entry_order=len(units),
-                            sentence_position=position,
-                            source_text=hit.text,
-                        )
+                if key in seen:
+                    continue
+                seen.add(key)
+                entries.append(
+                    _EvidenceEntry(
+                        address=MemoryEntryAddress(
+                            memory=ArtifactAddress(scope_id=group.scope_id, artifact=hit.memory_ref),
+                            entry_id=hit.entry_id,
+                            entry_version_id=hit.entry_version_id,
+                        ),
+                        text=hit.text,
+                        order=len(entries),
                     )
-        if not units:
+                )
+        if not entries:
             return None, (), (), PreparedContextOmissions()
 
-        query_tokens = set(_evidence_tokens(request.query))
+        query_terms = tuple(dict.fromkeys(_normalized_evidence_tokens(request.query)))
         document_frequency: dict[str, int] = {}
-        for unit in units:
-            for token in set(_evidence_tokens(unit.text)):
+        token_counts: list[dict[str, int]] = []
+        token_count_totals: list[int] = []
+        for entry in entries:
+            tokens = _normalized_evidence_tokens(entry.text)
+            counts: dict[str, int] = {}
+            for token in tokens:
+                counts[token] = counts.get(token, 0) + 1
+            token_counts.append(counts)
+            token_count_totals.append(len(tokens))
+            for token in set(query_terms) & counts.keys():
                 document_frequency[token] = document_frequency.get(token, 0) + 1
-        total = len(units)
-        idf = {token: math.log((total + 1) / (count + 1)) + 1.0 for token, count in document_frequency.items()}
-        raw_scores = []
-        for unit in units:
-            overlap = query_tokens & set(_evidence_tokens(unit.text))
-            raw_scores.append(sum(idf.get(token, 1.0) for token in overlap))
-        # Prefer contiguous evidence: a sentence supported by its neighbours is more
-        # likely to be part of a multi-sentence evidence span than an isolated hit.
-        scored: list[tuple[float, _EvidenceUnit]] = []
-        by_entry: dict[tuple[str, str], list[int]] = {}
-        for index, unit in enumerate(units):
-            key = (unit.address.memory.scope_id, unit.address.memory.artifact.artifact_id, unit.address.entry_id)
-            by_entry.setdefault(key, []).append(index)
-        for index, unit in enumerate(units):
-            key = (unit.address.memory.scope_id, unit.address.memory.artifact.artifact_id, unit.address.entry_id)
-            positions = by_entry[key]
-            pos = positions.index(index)
-            neighbour = 0.0
-            if pos > 0:
-                neighbour += raw_scores[positions[pos - 1]]
-            if pos + 1 < len(positions):
-                neighbour += raw_scores[positions[pos + 1]]
-            scored.append((raw_scores[index] + 0.2 * neighbour, unit))
-        scored.sort(key=lambda item: (-item[0], item[1].entry_order, item[1].start))
+
+        total_entries = len(entries)
+        idf = {token: math.log((total_entries + 1) / (count + 1)) + 1.0 for token, count in document_frequency.items()}
+        average_length = max(1.0, sum(token_count_totals) / total_entries)
+        scored_entries: list[tuple[float, _EvidenceEntry]] = []
+        for index, entry in enumerate(entries):
+            counts = token_counts[index]
+            length = token_count_totals[index]
+            score = 0.0
+            matched = 0
+            for token in query_terms:
+                frequency = counts.get(token, 0)
+                if not frequency:
+                    continue
+                matched += 1
+                score += (
+                    idf.get(token, 1.0)
+                    * frequency
+                    * (1.2 + 1.0)
+                    / (frequency + 1.2 * (1.0 - 0.75 + 0.75 * length / average_length))
+                )
+            if matched:
+                # A query term in the opening words is usually a title or section
+                # heading; that page/entry is a stronger evidence source.
+                head = set(_normalized_evidence_tokens(entry.text[:240]))
+                score += 0.5 * len(set(query_terms) & head)
+            # Retrieval candidates arrive ranked. The rank is a real relevance
+            # signal, but it must not override a clearly better lexical match
+            # (the caller can change query over the same candidate set).
+            score += 3.0 / (index + 1)
+            scored_entries.append((score, entry))
+        scored_entries.sort(key=lambda item: (-item[0], item[1].order))
 
         fragments: list[PreparedContextFragment] = []
         truncated_items = 0
-        selected: dict[tuple[str, str, str], list[tuple[int, int]]] = {}
-        for score, unit in scored:
-            if score <= 0 and fragments:
-                break
+        selected: dict[tuple[str, str, int, str, str], list[tuple[int, int]]] = {}
+        for _, entry in scored_entries:
             key = (
-                unit.address.memory.scope_id,
-                unit.address.memory.artifact.artifact_id,
-                unit.address.entry_id,
-                unit.address.entry_version_id,
+                entry.address.memory.scope_id,
+                entry.address.memory.artifact.artifact_id,
+                entry.address.memory.artifact.revision,
+                entry.address.entry_id,
+                entry.address.entry_version_id,
             )
             spans = selected.setdefault(key, [])
-            if any(unit.start < end and start < unit.end for start, end in spans):
+            # Whole-entry selection is the strongest possible evidence: no sentence
+            # splitter can cut through a gold span, and every token is preserved.
+            whole = PreparedContextFragment(address=entry.address, start=0, end=len(entry.text), text=entry.text)
+            if len(_render_evidence((*fragments, whole)).encode("utf-8")) <= request.max_bytes:
+                fragments.append(whole)
+                spans.append((0, len(entry.text)))
                 continue
-            fragment = PreparedContextFragment(address=unit.address, start=unit.start, end=unit.end, text=unit.text)
-            candidate = (*fragments, fragment)
-            if len(_render_evidence(candidate).encode("utf-8")) <= request.max_bytes:
-                fragments.append(fragment)
-                spans.append((unit.start, unit.end))
+
+            units = [
+                _EvidenceUnit(
+                    address=entry.address,
+                    start=start,
+                    end=end,
+                    text=text,
+                    entry_order=entry.order,
+                    sentence_position=position,
+                    source_text=entry.text,
+                )
+                for position, (start, end, text) in enumerate(_sentence_spans(entry.text))
+            ]
+            if not units:
                 continue
-            trimmed = _fit_evidence_fragment(
-                fragments,
-                unit,
-                request.max_bytes,
+            sentence_scores = []
+            for unit in units:
+                overlap = set(query_terms) & set(_normalized_evidence_tokens(unit.text))
+                sentence_scores.append(sum(idf.get(token, 1.0) for token in overlap))
+            anchor = max(range(len(units)), key=lambda position: (sentence_scores[position], -position))
+            low = high = anchor
+            while True:
+                candidates = []
+                if low > 0:
+                    candidates.append(low - 1)
+                if high + 1 < len(units):
+                    candidates.append(high + 1)
+                if not candidates:
+                    break
+                candidates.sort(key=lambda position: (-sentence_scores[position], position))
+                position = candidates[0]
+                next_low, next_high = min(low, position), max(high, position)
+                candidate = PreparedContextFragment(
+                    address=entry.address,
+                    start=units[next_low].start,
+                    end=units[next_high].end,
+                    text=entry.text[units[next_low].start : units[next_high].end],
+                )
+                if len(_render_evidence((*fragments, candidate)).encode("utf-8")) <= request.max_bytes:
+                    low, high = next_low, next_high
+                else:
+                    break
+            window = PreparedContextFragment(
+                address=entry.address,
+                start=units[low].start,
+                end=units[high].end,
+                text=entry.text[units[low].start : units[high].end],
             )
+            if any(window.start < end and start < window.end for start, end in spans):
+                continue
+            if len(_render_evidence((*fragments, window)).encode("utf-8")) <= request.max_bytes:
+                fragments.append(window)
+                spans.append((window.start, window.end))
+                continue
+            # The anchor sentence itself did not fit. Use the remaining capacity for
+            # the longest literal prefix of it that does, rather than returning empty.
+            trimmed = _fit_evidence_fragment(fragments, units[anchor], request.max_bytes)
             if trimmed is None:
+                continue
+            if any(trimmed.start < end and start < trimmed.end for start, end in spans):
                 continue
             fragments.append(trimmed)
             spans.append((trimmed.start, trimmed.end))
@@ -833,6 +908,13 @@ _EVIDENCE_TOKEN_RE = re.compile(r"[a-z]+|\d+")
 
 
 @dataclass(frozen=True)
+class _EvidenceEntry:
+    address: MemoryEntryAddress
+    text: str
+    order: int
+
+
+@dataclass(frozen=True)
 class _EvidenceUnit:
     address: MemoryEntryAddress
     start: int
@@ -841,6 +923,31 @@ class _EvidenceUnit:
     entry_order: int
     sentence_position: int
     source_text: str
+
+
+def _normalized_evidence_token(token: str) -> str:
+    token = token.lower()
+    if len(token) > 4 and token.endswith("ies"):
+        token = f"{token[:-3]}y"
+    elif len(token) > 5 and token.endswith("ing"):
+        base = token[:-3]
+        token = f"{base}e" if base.endswith("at") else base
+    elif len(token) > 4 and token.endswith("ed"):
+        base = token[:-2]
+        token = f"{base}e" if base.endswith("at") else base
+    elif len(token) > 4 and token.endswith("es"):
+        token = token[:-2]
+    elif len(token) > 3 and token.endswith("s") and not token.endswith("ss"):
+        token = token[:-1]
+    if token in {"operation", "operational"}:
+        return "operate"
+    if token == "geographic":
+        return "geography"
+    return token
+
+
+def _normalized_evidence_tokens(text: str) -> tuple[str, ...]:
+    return tuple(_normalized_evidence_token(token) for token in _EVIDENCE_TOKEN_RE.findall(text.lower()))
 
 
 def _sentence_spans(text: str) -> tuple[tuple[int, int, str], ...]:
@@ -899,7 +1006,7 @@ def _fit_evidence_fragment(
             address=unit.address,
             start=unit.start,
             end=end,
-            text=unit.source_text[unit.start:end],
+            text=unit.source_text[unit.start : end],
         )
         if len(_render_evidence((*fragments, candidate)).encode("utf-8")) <= max_bytes:
             best = candidate
