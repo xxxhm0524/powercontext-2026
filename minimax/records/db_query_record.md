@@ -5,8 +5,8 @@
 
 | 时间 | 操作 | 参数 | 返回行数 | 耗时 (ms) |
 | --- | --- | --- | --- | --- |
-| 2026-10-30T09:55:52.522118+00:00 | search | `["list_orders", "pagination", "min_total", "filtering", "listing", "minimum", "filters", "orders", "status", "amount"...` | 24 | 935.01 |
-| 2026-10-30T09:55:58.899953+00:00 | search | `["filtering", "filters", "status", "review", "filter", "state", "状态筛选", "状态筛", "态筛选", "状态", "态筛", "筛选", 400]` | 15 | 95.07 |
+| 2026-10-30T13:35:29.391272+00:00 | search | `["list_orders", "pagination", "min_total", "filtering", "listing", "minimum", "filters", "orders", "status", "amount"...` | 24 | 92.95 |
+| 2026-10-30T13:35:34.585428+00:00 | search | `["filtering", "filters", "status", "review", "filter", "state", "状态筛选", "状态筛", "态筛选", "状态", "态筛", "筛选", 400]` | 15 | 88.15 |
 
 ## 完整 SQL（最近一次）
 

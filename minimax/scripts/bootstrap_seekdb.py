@@ -23,6 +23,7 @@ import httpx
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from sdd_context.config import ensure_runtime_dirs, runtime_dir
+from sdd_context.http_ssl import build_ssl_context
 
 
 def main() -> int:
@@ -31,7 +32,7 @@ def main() -> int:
     parser.add_argument("--print-only", action="store_true")
     args = parser.parse_args()
 
-    response = httpx.post(args.endpoint, timeout=60)
+    response = httpx.post(args.endpoint, timeout=60, verify=build_ssl_context())
     response.raise_for_status()
     payload = response.json()
     required = {"instance_id", "username", "password", "database", "host", "port"}

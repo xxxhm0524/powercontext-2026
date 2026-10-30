@@ -20,6 +20,8 @@ from typing import Any
 
 import httpx
 
+from .http_ssl import build_ssl_context
+
 
 @dataclass
 class MiniMaxConfig:
@@ -31,6 +33,9 @@ class MiniMaxConfig:
 
     @classmethod
     def from_env(cls) -> "MiniMaxConfig":
+        from .config import _load_dotenv
+
+        _load_dotenv()
         return cls(
             api_key=os.environ.get("MINIMAX_API_KEY", "").strip(),
             base_url=os.environ.get("MINIMAX_BASE_URL", cls.base_url).rstrip("/"),
@@ -62,7 +67,7 @@ class MiniMaxClient:
     def __init__(self, config: MiniMaxConfig | None = None, *, record_path: Path | None = None) -> None:
         self.config = config or MiniMaxConfig.from_env()
         self.record_path = record_path
-        self._client = httpx.Client(timeout=self.config.timeout_seconds)
+        self._client = httpx.Client(timeout=self.config.timeout_seconds, verify=build_ssl_context())
 
     def close(self) -> None:
         self._client.close()

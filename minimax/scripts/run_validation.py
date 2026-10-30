@@ -35,6 +35,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from sdd_context.config import _load_dotenv
 from sdd_context.corpus import load_corpus
 from sdd_context.dev_workflow import apply_diff, run_after_checks, run_before_after
 from sdd_context.seekdb_store import SeekDBMaterialStore
@@ -43,6 +44,7 @@ from sdd_context.selector import select_context
 RECORDS = ROOT / "records"
 VALIDATION = ROOT / "validation"
 SAMPLE_TASK = VALIDATION / "sample_task.json"
+_load_dotenv()
 
 
 def now() -> str:

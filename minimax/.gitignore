@@ -1,5 +1,6 @@
 # Generated runtime data: never commit credentials or local state.
 .runtime/
+.env
 **/__pycache__/
 **/.pytest_cache/
 validation/workspace/

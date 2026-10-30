@@ -41,9 +41,27 @@ def project_root(explicit: str | Path | None = None) -> Path:
     return Path(os.environ.get("SDD_PROJECT_ROOT", DEFAULT_PROJECT_ROOT)).resolve()
 
 
+def _load_dotenv() -> None:
+    """Load a local ``minimax/.env`` without requiring python-dotenv."""
+
+    path = MINIMAX_DIR / ".env"
+    if not path.is_file():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip("'\"")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
 def seekdb_dsn() -> str | None:
     """Return an explicitly configured DSN or the one bootstrapped on disk."""
 
+    _load_dotenv()
     explicit = os.environ.get("SEEKDB_DSN") or os.environ.get("SDD_SEEKDB_DSN")
     if explicit:
         return explicit.strip()
