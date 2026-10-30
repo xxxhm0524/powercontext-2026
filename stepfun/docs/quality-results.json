@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-10-30T11:19:46.864Z",
+  "model": {
+    "id": "bge-small-zh-v1.5",
+    "repo": "Xenova/bge-small-zh-v1.5"
+  },
+  "corpus": {
+    "documents": 30,
+    "queries": 30
+  },
+  "method": "Cosine similarity ranking over the built-in corpus; labels at document level.",
+  "results": [
+    {
+      "name": "FP32 baseline",
+      "precision": "fp32",
+      "dtype": "fp32",
+      "loadMs": 154.18,
+      "embedMs": 234.41,
+      "queries": 30,
+      "recallAt5": 0.9667,
+      "ndcgAt5": 0.9323,
+      "mrrAt10": 0.9278,
+      "top1Accuracy": 0.9,
+      "top1Misses": 3,
+      "deltaRecallAt5": 0,
+      "deltaNdcgAt5": 0
+    },
+    {
+      "name": "FP16",
+      "precision": "fp16",
+      "dtype": "fp16",
+      "loadMs": 80.43,
+      "embedMs": 556.68,
+      "queries": 30,
+      "recallAt5": 0.9667,
+      "ndcgAt5": 0.9323,
+      "mrrAt10": 0.9278,
+      "top1Accuracy": 0.9,
+      "top1Misses": 3,
+      "deltaRecallAt5": 0,
+      "deltaNdcgAt5": 0
+    },
+    {
+      "name": "INT8 dynamic",
+      "precision": "int8",
+      "dtype": "q8",
+      "loadMs": 70.65,
+      "embedMs": 191.09,
+      "queries": 30,
+      "recallAt5": 0.9667,
+      "ndcgAt5": 0.928,
+      "mrrAt10": 0.9259,
+      "top1Accuracy": 0.9,
+      "top1Misses": 3,
+      "deltaRecallAt5": 0,
+      "deltaNdcgAt5": -0.0043
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "stepfun-edge-kb",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "端侧 AI 推理性能优化与 seekdb 混合检索：浏览器本地向量化的迷你知识库",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "setup:model": "node scripts/fetch-model.mjs",
+    "prepare:assets": "node scripts/prepare-assets.mjs",
+    "build": "npm run prepare:assets && vite build --config web/vite.config.js",
+    "start": "node server/index.mjs",
+    "dev": "node scripts/dev.mjs",
+    "benchmark": "node scripts/benchmark.mjs",
+    "eval:quality": "node scripts/eval-quality.mjs",
+    "test:api": "node scripts/test-api.mjs"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.7.5",
+    "dotenv": "16.4.7",
+    "express": "4.21.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "seekdb": "1.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "4.3.4",
+    "vite": "5.4.11"
+  }
+}

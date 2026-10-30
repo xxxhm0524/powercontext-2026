@@ -1,0 +1,8 @@
+node_modules/
+web/dist/
+web/public/ort/
+models/
+data/
+*.log
+.env
+.DS_Store

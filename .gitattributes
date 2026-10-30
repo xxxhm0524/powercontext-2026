@@ -1,3 +1,4 @@
 # Keep competition and minimax text assets reproducible across Windows/Linux.
 competition/** text eol=lf
 minimax/** text eol=lf
+stepfun/** text eol=lf

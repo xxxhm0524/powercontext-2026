@@ -1,0 +1,70 @@
+{
+  "generatedAt": "2026-10-30T11:23:53.462Z",
+  "environment": {
+    "device": "Windows 11 (10.0.26200), x64",
+    "browser": "Chromium 146.0.7680.80 (Electron 41.0.3, ZCode in-app browser)",
+    "gpu": "NVIDIA Blackwell (WebGPU adapter, vendor=nvidia, architecture=blackwell)",
+    "hardwareConcurrency": 24,
+    "deviceMemoryGB": 8,
+    "corpus": "30 documents / 30 chunks",
+    "batchSize": 8
+  },
+  "webgpu": {
+    "backend": "webgpu",
+    "dtype": "fp16",
+    "modelLoadMs": 410.8,
+    "modelLoadFirstColdMs": 665.0,
+    "embedding": {
+      "texts": 30,
+      "totalMs": 94.4,
+      "perTextMs": 3.15,
+      "textsPerSecond": 317.8,
+      "batchMs": [48.4, 18.0, 16.0, 11.3]
+    },
+    "search": {
+      "queries": 20,
+      "dbP50Ms": 3.62,
+      "dbP95Ms": 4.87,
+      "dbMeanMs": 3.86,
+      "queryEmbedP50Ms": 8.3,
+      "e2eQueries": 10,
+      "e2eP50Ms": 15.3,
+      "e2eP95Ms": 17.8
+    }
+  },
+  "wasm": {
+    "backend": "wasm",
+    "dtype": "q8",
+    "modelLoadMs": 91.1,
+    "embedding": {
+      "texts": 30,
+      "totalMs": 1679.7,
+      "perTextMs": 55.99,
+      "textsPerSecond": 17.86,
+      "batchMs": [425.2, 437.1, 450.7, 365.7]
+    },
+    "search": {
+      "queries": 20,
+      "dbP50Ms": 3.56,
+      "dbP95Ms": 4.19,
+      "dbMeanMs": 3.91,
+      "queryEmbedP50Ms": 8.3,
+      "e2eQueries": 10,
+      "e2eP50Ms": 15.1,
+      "e2eP95Ms": 19.6
+    }
+  },
+  "indexWrite": {
+    "documents": 30,
+    "embeddingMs": 824.2,
+    "insertMs": 127.6,
+    "refreshMs": 312.6,
+    "note": "measured during the first WebGPU import of the sample corpus"
+  },
+  "notes": [
+    "模型文件由本机 HTTP 服务提供；首次 WebGPU 加载在清空 Cache Storage 后为 665 ms，热加载为 411 ms。",
+    "WASM 的 91 ms 为模型文件已进入 HTTP 缓存后的热加载时间；首次使用需先下载 22.9 MB 的 INT8 ONNX 文件。",
+    "检索延迟为 seekdb 返回的 hybridSearch 端到端耗时；端到端延迟还包含查询向量化和 HTTP 往返。",
+    "基准由应用内「运行性能基准」按钮执行，固定 30 篇示例文档、20 条查询；正式结果取 P50/P95，避免只报告最快一次。"
+  ]
+}
