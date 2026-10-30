@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>笔记猎人 NoteHunter - 项目展示</title>
+<style>
+  :root {
+    --bg: #f8fafb;
+    --surface: #ffffff;
+    --text: #1a2b3c;
+    --text-secondary: #5a6a7a;
+    --accent: #2563eb;
+    --accent-light: #eff4ff;
+    --border: #e5eaf0;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+  }
+  nav .inner {
+    max-width: 1080px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+  }
+  nav .logo { font-weight: 700; font-size: 17px; color: var(--accent); text-decoration: none; }
+  nav .links { display: flex; gap: 24px; }
+  nav .links a { font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: color .2s; }
+  nav .links a:hover { color: var(--accent); }
+
+  .hero {
+    max-width: 1080px; margin: 0 auto;
+    padding: 80px 24px 48px;
+    text-align: center;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--accent-light); color: var(--accent);
+    font-size: 13px; font-weight: 600;
+    padding: 4px 14px; border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 { font-size: 42px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.25; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { font-size: 18px; color: var(--text-secondary); max-width: 620px; margin: 0 auto 32px; }
+  .hero .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 22px; border-radius: 8px; font-size: 15px; font-weight: 600;
+    text-decoration: none; transition: all .2s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-outline { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  section { max-width: 1080px; margin: 0 auto; padding: 48px 24px; }
+  section h2 {
+    font-size: 26px; font-weight: 700; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  section h2 .icon { font-size: 28px; }
+  section .subtitle { color: var(--text-secondary); font-size: 15px; margin-bottom: 32px; }
+
+  .problem-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 32px;
+    box-shadow: var(--shadow);
+    display: flex; gap: 24px; align-items: flex-start;
+  }
+  .problem-card .emoji { font-size: 40px; flex-shrink: 0; }
+  .problem-card p { font-size: 16px; color: var(--text-secondary); line-height: 1.8; }
+  .problem-card strong { color: var(--text); }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .feature-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px;
+    box-shadow: var(--shadow);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .feature-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+  .feature-card .f-icon { font-size: 28px; margin-bottom: 12px; }
+  .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .feature-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+  .tech-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .tech-tag {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 16px;
+    font-size: 14px; font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: var(--shadow);
+  }
+  .tech-tag .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .screenshots-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  .screenshot-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: transform .2s;
+  }
+  .screenshot-item:hover { transform: translateY(-2px); }
+  .screenshot-item img {
+    width: 100%; display: block;
+    border-bottom: 1px solid var(--border);
+  }
+  .screenshot-item .caption {
+    padding: 14px 18px;
+    font-size: 14px; color: var(--text-secondary);
+  }
+  .screenshot-item .caption strong { color: var(--text); }
+
+  footer {
+    max-width: 1080px; margin: 0 auto;
+    padding: 40px 24px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--text-secondary); font-size: 14px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 30px; }
+    .hero p { font-size: 16px; }
+    .problem-card { flex-direction: column; gap: 12px; }
+    .screenshots-grid { grid-template-columns: 1fr; }
+    nav .links { gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <a href="#" class="logo">NoteHunter</a>
+    <div class="links">
+      <a href="#problem">痛点</a>
+      <a href="#features">功能</a>
+      <a href="#tech">技术栈</a>
+      <a href="#demo">效果演示</a>
+      <a href="https://github.com/xxxhm0524/powercontext-2026" target="_blank">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="badge">OceanBase seekdb</div>
+  <h1><span>笔记猎人</span> NoteHunter</h1>
+  <p>基于 OceanBase seekdb 的本地学习资料语义检索助手。用一句自然语言，就能从几十份笔记和 PDF 里找到你需要的知识点。</p>
+  <div class="actions">
+    <a href="https://github.com/xxxhm0524/powercontext-2026" target="_blank" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      查看源码
+    </a>
+    <a href="#demo" class="btn btn-outline">效果演示 ↓</a>
+  </div>
+</div>
+
+<section id="problem">
+  <h2><span class="icon"></span> 解决了什么问题</h2>
+  <p class="subtitle">期末复习时，你一定经历过这样的崩溃时刻——</p>
+  <div class="problem-card">
+    <div class="emoji">😵</div>
+    <p>
+      桌上摊着 <strong>几十份课程笔记、实验报告、PDF 课件</strong>，你明明记得某个知识点记在某处，但就是想不起来在哪个文件里。用关键词搜索？表述稍有不同就搜不到。逐份翻找？时间全浪费了。<br><br>
+      <strong>笔记猎人</strong> 把本地文档自动切片后存入 seekdb 向量数据库，让你<strong>用一句自然语言</strong>就能定位到原文段落和出处——不再为"那个知识点到底在哪"而焦虑。
+    </p>
+  </div>
+</section>
+
+<section id="features">
+  <h2><span class="icon">⚡</span> 核心功能</h2>
+  <p class="subtitle">从文档导入到语义检索，五步完成知识定位</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="f-icon">📥</div>
+      <h3>文档导入</h3>
+      <p>支持 .md / .txt / .pdf 三种常见格式，一键导入 data 目录下的所有学习资料。</p>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">✂️</div>
+      <h3>自动切片</h3>
+      <p>智能按段落切分文档，保留来源文件名和段落序号，方便回溯原文。</p>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">💾</div>
+      <h3>存入 seekdb</h3>
+      <p>切片后的文本转为向量写入 OceanBase seekdb，嵌入式模式无需部署数据库服务。</p>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">🔍</div>
+      <h3>自然语言检索</h3>
+      <p>输入一句问句，基于向量相似度匹配最相关的笔记段落，告别关键词拼写焦虑。</p>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">🎛️</div>
+      <h3>混合检索</h3>
+      <p>支持按文件名过滤，在指定文档中精确搜索，结合语义匹配实现双重定位。</p>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">🚀</div>
+      <h3>零部署启动</h3>
+      <p>Python + Flask 一键启动 Web 服务，seekdb 嵌入式运行，无需 Docker 或外部数据库。</p>
+    </div>
+  </div>
+</section>
+
+<section id="tech">
+  <h2><span class="icon">️</span> 技术栈</h2>
+  <p class="subtitle">轻量、本地优先、开箱即用</p>
+  <div class="tech-row">
+    <div class="tech-tag"><span class="dot" style="background:#3776ab"></span> Python 3.11</div>
+    <div class="tech-tag"><span class="dot" style="background:#000"></span> Flask</div>
+    <div class="tech-tag"><span class="dot" style="background:#00618a"></span> pyseekdb</div>
+    <div class="tech-tag"><span class="dot" style="background:#e76f00"></span> OceanBase seekdb（嵌入式）</div>
+    <div class="tech-tag"><span class="dot" style="background:#2a5e9e"></span> pypdf</div>
+    <div class="tech-tag"><span class="dot" style="background:#e44d26"></span> HTML + CSS + JS</div>
+  </div>
+</section>
+
+<section id="demo">
+  <h2><span class="icon">🖥️</span> 效果演示</h2>
+  <p class="subtitle">实际使用界面一览</p>
+  <div class="screenshots-grid">
+    <div class="screenshot-item">
+      <img src="screenshots/s1.png" alt="截图1">
+      <div class="caption"><strong>01</strong> &nbsp;启动 Flask 服务后，在浏览器打开本地 Web 界面，包含数据管理与语义搜索模块</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="screenshots/s2.png" alt="截图2">
+      <div class="caption"><strong>02</strong> &nbsp;输入自然语言问题"二叉树的遍历方式有哪些"，语义匹配返回 5 条相关段落</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="screenshots/s3.png" alt="截图3">
+      <div class="caption"><strong>03</strong> &nbsp;搜索"排序的定义"，跨多份文档检索出排序算法、链表等知识点</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="screenshots/s4.png" alt="截图4">
+      <div class="caption"><strong>04</strong> &nbsp;限定文件名"数据结构笔记.md"后，结果全部来自指定文档，实现混合检索</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>笔记猎人 NoteHunter &mdash; 基于 <a href="https://github.com/xxxhm0524/powercontext-2026" target="_blank">OceanBase seekdb</a> 的本地语义检索助手</p>
+  <p style="margin-top:8px">
+    <a href="https://github.com/xxxhm0524/powercontext-2026" target="_blank">GitHub 仓库</a>
+  </p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>笔记猎人 NoteHunter</title>
+    <!-- 引入样式文件 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<!-- ====== 顶部标题栏 ====== -->
+<header class="header">
+    <h1>📚 笔记猎人 NoteHunter</h1>
+    <p class="subtitle">基于 OceanBase seekdb 的本地学习资料语义检索助手</p>
+</header>
+
+<!-- ====== 主内容区 ====== -->
+<main class="container">
+
+    <!-- 操作面板：导入文档 + 重置数据库 -->
+    <section class="panel actions-panel">
+        <h2>数据管理</h2>
+        <div class="actions">
+            <button id="btn-ingest" onclick="ingestDocs()">📥 导入 data/ 目录文档</button>
+            <button id="btn-reset" class="btn-danger" onclick="resetDB()">🗑️ 重置数据库</button>
+            <span id="action-status" class="status-text"></span>
+        </div>
+    </section>
+
+    <!-- 搜索区域 -->
+    <section class="panel search-panel">
+        <h2>语义搜索</h2>
+        <div class="search-form">
+            <!-- 主搜索框：输入自然语言问题 -->
+            <div class="input-group">
+                <label for="search-input">搜索内容</label>
+                <input type="text" id="search-input" placeholder="用一句自然语言描述你要找的知识点，例如：什么是二叉树的遍历？" />
+            </div>
+
+            <!-- 文件名过滤框（可选）：限定在某份文档中检索 -->
+            <div class="input-group">
+                <label for="filename-input">限定文件名（可选，留空则搜索全部文档）</label>
+                <input type="text" id="filename-input" placeholder="例如：数据结构笔记.md" />
+            </div>
+
+            <!-- 搜索按钮 -->
+            <button id="btn-search" onclick="doSearch()">🔍 开始搜索</button>
+        </div>
+    </section>
+
+    <!-- 搜索结果显示区 -->
+    <section class="panel results-panel" id="results-panel" style="display: none;">
+        <h2>搜索结果 <span id="result-count" class="badge"></span></h2>
+        <div id="results-list">
+            <!-- 结果会由 JavaScript 动态插入到这里 -->
+        </div>
+    </section>
+
+</main>
+
+<!-- ====== 底部 ====== -->
+<footer class="footer">
+    <p>笔记猎人 NoteHunter &copy; 2026 | Powered by pyseekdb + Flask</p>
+</footer>
+
+<!-- ====== JavaScript 交互逻辑 ====== -->
+<script>
+    /**
+     * 执行搜索
+     * 读取搜索框和文件名过滤框的内容，调用后端 API，展示结果
+     */
+    async function doSearch() {
+        const query = document.getElementById("search-input").value.trim();
+        if (!query) {
+            alert("请先输入搜索内容！");
+            return;
+        }
+
+        const filename = document.getElementById("filename-input").value.trim();
+
+        // 构造请求 URL（把参数拼到 query string 里）
+        let url = "/api/search?q=" + encodeURIComponent(query) + "&n=5";
+        if (filename) {
+            url += "&filename=" + encodeURIComponent(filename);
+        }
+
+        // 显示加载状态
+        const panel = document.getElementById("results-panel");
+        const list = document.getElementById("results-list");
+        panel.style.display = "block";
+        list.innerHTML = '<div class="loading">正在检索中，请稍候...</div>';
+
+        try {
+            const resp = await fetch(url);
+            const data = await resp.json();
+
+            if (data.error) {
+                list.innerHTML = '<div class="error">❌ ' + data.error + '</div>';
+                return;
+            }
+
+            renderResults(data.results);
+        } catch (err) {
+            list.innerHTML = '<div class="error">❌ 请求失败: ' + err.message + '</div>';
+        }
+    }
+
+    /**
+     * 把搜索结果渲染到页面上
+     */
+    function renderResults(results) {
+        const list = document.getElementById("results-list");
+        const countEl = document.getElementById("result-count");
+
+        if (!results || results.length === 0) {
+            list.innerHTML = '<div class="empty">😔 没有找到相关内容，试试换个表述？</div>';
+            countEl.textContent = "0 条";
+            return;
+        }
+
+        countEl.textContent = results.length + " 条";
+
+        // 逐条构建 HTML
+        let html = "";
+        results.forEach(function (item, idx) {
+            html += `
+                <div class="result-card">
+                    <div class="result-header">
+                        <span class="result-rank">#${idx + 1}</span>
+                        <span class="result-filename">📄 ${escapeHtml(item.filename)}</span>
+                        <span class="result-chunk">段落 ${item.chunk_id}</span>
+                        <span class="result-distance">距离: ${item.distance}</span>
+                    </div>
+                    <div class="result-text">${escapeHtml(item.text)}</div>
+                </div>
+            `;
+        });
+
+        list.innerHTML = html;
+    }
+
+    /**
+     * 导入文档：调用后端 /api/ingest 接口
+     */
+    async function ingestDocs() {
+        const statusEl = document.getElementById("action-status");
+        const btn = document.getElementById("btn-ingest");
+        btn.disabled = true;
+        statusEl.textContent = "正在导入，首次运行需下载 embedding 模型，请耐心等待...";
+        statusEl.className = "status-text loading-text";
+
+        try {
+            const resp = await fetch("/api/ingest", { method: "POST" });
+            const data = await resp.json();
+
+            if (data.error) {
+                statusEl.textContent = "❌ " + data.error;
+                statusEl.className = "status-text error-text";
+            } else {
+                statusEl.textContent = `✅ 导入完成！共处理 ${data.files} 个文件，${data.chunks} 个切片`;
+                statusEl.className = "status-text success-text";
+            }
+        } catch (err) {
+            statusEl.textContent = "❌ 请求失败: " + err.message;
+            statusEl.className = "status-text error-text";
+        }
+
+        btn.disabled = false;
+    }
+
+    /**
+     * 重置数据库：调用后端 /api/reset 接口
+     */
+    async function resetDB() {
+        if (!confirm("确定要清空数据库吗？之后需要重新导入文档。")) {
+            return;
+        }
+
+        const statusEl = document.getElementById("action-status");
+        try {
+            const resp = await fetch("/api/reset", { method: "POST" });
+            const data = await resp.json();
+
+            if (data.error) {
+                statusEl.textContent = "❌ " + data.error;
+                statusEl.className = "status-text error-text";
+            } else {
+                statusEl.textContent = "✅ " + data.message;
+                statusEl.className = "status-text success-text";
+            }
+        } catch (err) {
+            statusEl.textContent = "❌ 请求失败: " + err.message;
+            statusEl.className = "status-text error-text";
+        }
+    }
+
+    /**
+     * 简单的 HTML 转义，防止 XSS
+     */
+    function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * 让回车键也能触发搜索
+     */
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("search-input").addEventListener("keydown", function (e) {
+            if (e.key === "Enter") doSearch();
+        });
+        document.getElementById("filename-input").addEventListener("keydown", function (e) {
+            if (e.key === "Enter") doSearch();
+        });
+    });
+</script>
+
+</body>
+</html>

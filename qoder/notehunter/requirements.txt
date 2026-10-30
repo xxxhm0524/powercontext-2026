@@ -1,0 +1,6 @@
+# 笔记猎人 NoteHunter - Python 依赖
+# 安装命令: pip install -r requirements.txt
+
+flask>=3.0
+pyseekdb>=0.1.0
+pypdf>=4.0
