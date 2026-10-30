@@ -1,7 +1,6 @@
 # Runtime dependencies for the MiniMax SDD sample.
 # PowerContext itself is installed from the repository root (`pip install -e .`).
-# pyseekdb is optional and only needed for seekdb embedded mode on Linux/macOS:
-#   pip install pyseekdb==1.4.0.post1
+pyseekdb==1.4.0.post1
 pymysql>=1.1.1
 httpx>=0.27
 fastapi>=0.115

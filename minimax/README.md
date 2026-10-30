@@ -44,7 +44,16 @@ minimax/
 
 - 一个 seekdb / OceanBase 实例。三种方式任选其一：
 
-  1. **免费 seekdb 云实例（推荐，无需账号）**：
+  1. **seekdb 嵌入式模式（Linux/macOS，推荐评审，零外部服务）**：
+
+     `requirements.txt` 已包含 `pyseekdb`，Linux 会自动安装 `pylibseekdb`。
+     不设置任何变量时，默认使用 `minimax/.runtime/seekdb-embedded`：
+
+     ```bash
+     python -m sdd_context.cli init --project-root demo_project --reset
+     ```
+
+  2. **免费 seekdb 云实例（Windows 或无法安装 pylibseekdb 时）**：
 
      ```bash
      python minimax/scripts/bootstrap_seekdb.py
@@ -53,17 +62,10 @@ minimax/
      脚本会把连接串写入 `minimax/.runtime/seekdb.json`（已 git-ignore），
      实例有效期 7 天，可重复执行创建新实例。
 
-  2. **已有 seekdb / OceanBase**：设置环境变量
+  3. **已有 seekdb / OceanBase**：设置环境变量
 
      ```bash
      export SEEKDB_DSN='mysql://user:password@host:2881/database'
-     ```
-
-  3. **seekdb 嵌入式模式（Linux/macOS，安装 pylibseekdb）**：
-
-     ```bash
-     pip install pyseekdb==1.4.0.post1   # 会自动安装对应平台的 pylibseekdb
-     export SEEKDB_PATH=/path/to/seekdb-data
      ```
 
   说明：PowerContext 自身使用 SQLite 持久化，因此不需要 OceanBase 租户。
@@ -123,9 +125,7 @@ python scripts/run_validation.py
 8. 修改规格并重新导入，验证上下文使用更新后的内容；
 9. 输出 `validation/report.json` / `report.md` 与测试日志。
 
-注意：未配置 `MINIMAX_API_KEY` 时，验证脚本会使用参考补丁完成代码效果验证，
-并把 `minimax_participation` 标记为失败。要完成全部六项硬性验收，需配置
-MiniMax 平台 Key 后运行：
+注意：未配置 `MINIMAX_API_KEY` 时，验证脚本默认会**重放仓库中已提交的真实 MiniMax 开发记录**（`records/minimax_dev_record.jsonl`）及其补丁，因此干净环境也能完成 6/6。若要在本机重新现场调用 MiniMax，配置 Key 后运行：
 
 ```bash
 export MINIMAX_API_KEY='...'
@@ -200,6 +200,5 @@ curl -s http://127.0.0.1:8765/context \
 
 - Windows 不提供 `pylibseekdb`，请使用 seekdb Server DSN；Linux/macOS 可用嵌入式模式。
 - 免费 seekdb 云实例有效期 7 天，过期后重新执行 `scripts/bootstrap_seekdb.py`。
-- 真实的 MiniMax 开发记录需要平台 API Key；仓库不包含任何凭据。
-- 验证样例的参考补丁只用于展示“修改前后测试变化”，最终提交应使用
-  `--use-minimax` 生成的模型补丁与记录。
+- 真实的 MiniMax 开发记录已在 `records/minimax_dev_record.jsonl` 中；重新现场调用需要平台 API Key，仓库不包含任何凭据。
+- 验证样例的参考补丁 `validation/reference_change.patch` 仅用于离线自测；默认验收会优先重放真实 MiniMax 记录中的模型补丁。

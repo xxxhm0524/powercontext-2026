@@ -1,7 +1,7 @@
 # MiniMax SDD 验证报告
 
-- run_id: `20261030-142636`
-- 时间: 2026-10-30T14:27:18.360860+00:00
+- run_id: `20261030-153607`
+- 时间: 2026-10-30T15:36:44.432901+00:00
 - 结果: **6/6**
 
 | 验收项 | 结果 | 证据 |
@@ -13,4 +13,4 @@
 | state_reuse | PASS | initial status=context_ready; final status=verified |
 | code_change_effective | PASS | before target={'failed': 5} regression={'passed': 6}; after target={'passed': 5} regression={'passed': 6} full={'passed': 11} |
 
-Candidate patch produced by a live MiniMax call.
+Replayed the committed MiniMax development record.

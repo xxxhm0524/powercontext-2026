@@ -1,6 +1,6 @@
 {
-  "run_id": "20261030-142636",
-  "generated_at": "2026-10-30T14:27:18.360860+00:00",
+  "run_id": "20261030-153607",
+  "generated_at": "2026-10-30T15:36:44.432901+00:00",
   "passed": 6,
   "total": 6,
   "all_passed": true,
@@ -10,11 +10,11 @@
       "passed": true,
       "detail": "init, context and validation sample executed via seekdb-server:gw0.apac.seekdb.ai:2881/d0_t2ywT0r3AcT1; init_chunks=24, context_exit=0, state_exit=0",
       "evidence": {
-        "import_id": "20261030142648074709",
+        "import_id": "20261030153617098811",
         "source_hash": "f226dcf862c766e7f7c25d0de20252beadb8f9793fae6bf5995b1dcf74b2a677",
         "chunks": 24,
         "terms": 793,
-        "elapsed_ms": 3275.28,
+        "elapsed_ms": 2506.94,
         "mode": "seekdb-server:gw0.apac.seekdb.ai:2881/d0_t2ywT0r3AcT1"
       }
     },
@@ -60,9 +60,9 @@
           "test": 15
         },
         "last_import": {
-          "import_id": "20261030142708653213",
+          "import_id": "20261030153638378421",
           "source_hash": "f226dcf862c766e7f7c25d0de20252beadb8f9793fae6bf5995b1dcf74b2a677",
-          "imported_at": "2026-10-30T14:27:08.653313+00:00",
+          "imported_at": "2026-10-30T15:36:38.378522+00:00",
           "chunk_count": 24
         }
       }
@@ -88,7 +88,7 @@
             "target_failed": true
           },
           "notes": "Validation run: context selected before code change.",
-          "updated_at": "2026-10-30T14:26:50.935324+00:00"
+          "updated_at": "2026-10-30T15:36:20.588300+00:00"
         },
         "final": {
           "task_id": "TASK-ORDER-FILTER-001",
@@ -114,7 +114,7 @@
             }
           },
           "notes": "Validation run complete.",
-          "updated_at": "2026-10-30T14:27:15.959135+00:00"
+          "updated_at": "2026-10-30T15:36:41.715814+00:00"
         }
       }
     },
@@ -141,8 +141,9 @@
           "full": {
             "passed": 11
           },
-          "log": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\logs\\pytest-after-20261030-142636.log",
-          "candidate_provider": "minimax"
+          "log": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\logs\\pytest-after-20261030-153607.log",
+          "candidate_provider": "minimax",
+          "patch_source": "recorded"
         }
       }
     }
@@ -221,7 +222,7 @@
         "regression": {
           "passed": 6
         },
-        "log": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\logs\\pytest-before-20261030-142636.log"
+        "log": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\logs\\pytest-before-20261030-153607.log"
       }
     },
     {
@@ -244,7 +245,7 @@
           "target_failed": true
         },
         "notes": "Validation run: context selected before code change.",
-        "updated_at": "2026-10-30T14:26:50.935324+00:00"
+        "updated_at": "2026-10-30T15:36:20.588300+00:00"
       }
     },
     {
@@ -269,8 +270,9 @@
         "full": {
           "passed": 11
         },
-        "log": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\logs\\pytest-after-20261030-142636.log",
-        "candidate_provider": "minimax"
+        "log": "D:\\oceanbase\\powercontext-eco\\minimax\\validation\\logs\\pytest-after-20261030-153607.log",
+        "candidate_provider": "minimax",
+        "patch_source": "recorded"
       }
     },
     {
@@ -301,9 +303,9 @@
           }
         },
         "notes": "Validation run complete.",
-        "updated_at": "2026-10-30T14:27:15.959135+00:00"
+        "updated_at": "2026-10-30T15:36:41.715814+00:00"
       }
     }
   ],
-  "notes": "Candidate patch produced by a live MiniMax call."
+  "notes": "Replayed the committed MiniMax development record."
 }

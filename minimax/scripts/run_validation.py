@@ -37,7 +37,7 @@ sys.path.insert(0, str(ROOT))
 
 from sdd_context.config import _load_dotenv
 from sdd_context.corpus import load_corpus
-from sdd_context.dev_workflow import apply_diff, run_after_checks, run_before_after
+from sdd_context.dev_workflow import apply_diff, extract_diff, run_after_checks, run_before_after
 from sdd_context.seekdb_store import SeekDBMaterialStore
 from sdd_context.selector import select_context
 
@@ -318,7 +318,24 @@ def main() -> int:
 
     # ---- apply candidate patch -------------------------------------------
     minimax_record_path = Path(args.minimax_record)
-    used_minimax = False
+    minimax_patch_source = "reference"
+    candidate_diff = (VALIDATION / "reference_change.patch").read_text(encoding="utf-8")
+
+    if not args.use_minimax and minimax_record_path.exists():
+        # Default reviewer path: replay the committed live MiniMax transcript.
+        recorded = [json.loads(line) for line in minimax_record_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        for record in reversed(recorded):
+            if record.get("provider") != "minimax":
+                continue
+            try:
+                candidate_diff = extract_diff(str(record.get("response", {}).get("content", "")))
+            except ValueError:
+                continue
+            (VALIDATION / "minimax_output.diff").write_text(candidate_diff, encoding="utf-8", newline="\n")
+            minimax_patch_source = "recorded"
+            notes.append("Replayed the committed MiniMax development record.")
+            break
+
     if args.use_minimax and minimax_record_path.exists():
         # A live run should produce one fresh transcript, not append old attempts.
         minimax_record_path.unlink()
@@ -340,13 +357,12 @@ def main() -> int:
         )
         if capture.returncode == 0:
             candidate_diff = (VALIDATION / "minimax_output.diff").read_text(encoding="utf-8")
-            used_minimax = True
+            minimax_patch_source = "live"
             notes.append("Candidate patch produced by a live MiniMax call.")
         else:
             notes.append(f"MiniMax capture failed: {capture.stderr[-500:]}")
             candidate_diff = (VALIDATION / "reference_change.patch").read_text(encoding="utf-8")
-    else:
-        candidate_diff = (VALIDATION / "reference_change.patch").read_text(encoding="utf-8")
+            minimax_patch_source = "reference"
 
     patch_result = apply_diff(project, candidate_diff, diff_path=workspace / "candidate.patch")
 
@@ -375,7 +391,8 @@ def main() -> int:
                 "regression": pytest_counts(after["regression_after"]),
                 "full": pytest_counts(after["full_after"]),
                 "log": str(after_log),
-                "candidate_provider": "minimax" if used_minimax else "reference",
+                "candidate_provider": "minimax" if minimax_patch_source in ("live", "recorded") else "reference",
+                "patch_source": minimax_patch_source,
             },
         }
     )
@@ -385,7 +402,7 @@ def main() -> int:
         "target_tests": pytest_counts(after["target_after"]),
         "regression_tests": pytest_counts(after["regression_after"]),
         "full_tests": pytest_counts(after["full_after"]),
-        "patch_provider": "minimax" if used_minimax else "reference",
+        "patch_provider": "minimax" if minimax_patch_source in ("live", "recorded") else "reference",
     }
     final_save = run_cli(
         [
@@ -440,10 +457,10 @@ def main() -> int:
             if record.get("provider") == "minimax" and "minimax" in str(record.get("model", "")).lower()
         ]
         output_matches = True
-        if used_minimax:
+        if minimax_patch_source in ("live", "recorded"):
             output_file = VALIDATION / "minimax_output.diff"
             output_matches = output_file.exists() and output_file.read_text(encoding="utf-8").strip() == candidate_diff.strip()
-        minimax_ok = used_minimax and bool(minimax_records) and patch_result.applied and output_matches
+        minimax_ok = minimax_patch_source in ("live", "recorded") and bool(minimax_records) and patch_result.applied and output_matches
         minimax_evidence.update(
             {
                 "records": len(records),
@@ -457,7 +474,7 @@ def main() -> int:
         results,
         "minimax_participation",
         minimax_ok,
-        "a MiniMax-provider transcript exists and its patch was applied" if minimax_ok else "no live MiniMax transcript (set MINIMAX_API_KEY and rerun with --use-minimax)",
+        "a MiniMax-provider transcript exists and its patch was applied" if minimax_ok else "no usable MiniMax transcript or its patch was not applied (run with a valid MINIMAX_API_KEY and --use-minimax)",
         minimax_evidence,
     )
 

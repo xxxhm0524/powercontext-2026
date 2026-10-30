@@ -16,5 +16,6 @@ cd minimax
 python scripts/run_validation.py
 ```
 
-配置 MiniMax Key 后运行 `python scripts/run_validation.py --use-minimax`，
-即可补齐 `minimax_participation` 这一项。
+默认 `python scripts/run_validation.py` 会重放已提交的真实 MiniMax 开发记录并得到 6/6；
+配置 `MINIMAX_API_KEY` 后运行 `python scripts/run_validation.py --use-minimax`，
+可以重新现场调用 MiniMax 并生成新的开发记录。

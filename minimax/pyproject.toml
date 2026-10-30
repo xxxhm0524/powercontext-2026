@@ -8,6 +8,7 @@ version = "1.0.0"
 description = "Spec-driven development context module for the MiniMax competition task"
 requires-python = ">=3.11"
 dependencies = [
+    "pyseekdb==1.4.0.post1",
     "pymysql>=1.1.1",
     "httpx>=0.27",
 ]

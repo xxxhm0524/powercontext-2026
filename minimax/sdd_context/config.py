@@ -80,7 +80,11 @@ def seekdb_dsn() -> str | None:
 
 def seekdb_path() -> Path | None:
     value = os.environ.get("SEEKDB_PATH")
-    return Path(value).resolve() if value else None
+    if value:
+        return Path(value).resolve()
+    # Zero-configuration embedded mode for Linux/macOS reviewers: pyseekdb
+    # creates this directory on first use.
+    return runtime_dir() / "seekdb-embedded"
 
 
 def ensure_runtime_dirs() -> None:

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from typing import Iterable
 
 VALID_STATUSES = ("pending", "paid", "shipped", "cancelled")
@@ -24,15 +24,6 @@ class Order:
     created_at: datetime
 
 
-def _coerce_min_total(value: Decimal | str | int) -> Decimal:
-    if isinstance(value, Decimal):
-        return value
-    try:
-        return Decimal(str(value))
-    except (InvalidOperation, ValueError) as error:
-        raise ValueError("min_total must be a decimal number") from error
-
-
 def list_orders(
     orders: Iterable[Order],
     *,
@@ -41,10 +32,7 @@ def list_orders(
     limit: int = 20,
     offset: int = 0,
 ) -> list[Order]:
-    """Return orders in newest-first order with optional status/min_total filters.
-
-    Filtering is applied before pagination so page contents are stable.
-    """
+    """Return orders in newest-first order, optionally filtered."""
 
     if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 100:
         raise ValueError("limit must be an integer between 1 and 100")
@@ -52,22 +40,23 @@ def list_orders(
         raise ValueError("offset must be a non-negative integer")
 
     if status is not None and status not in VALID_STATUSES:
-        raise ValueError(f"unknown status: {status}")
+        raise ValueError("status must be one of: pending, paid, shipped, cancelled")
 
-    threshold: Decimal | None = None
+    minimum: Decimal | None = None
     if min_total is not None:
-        threshold = _coerce_min_total(min_total)
-        if threshold < 0:
+        minimum = Decimal(min_total) if isinstance(min_total, str) else Decimal(min_total)
+        if minimum < 0:
             raise ValueError("min_total must be non-negative")
 
-    ordered = sorted(orders, key=lambda order: (order.created_at, order.order_id), reverse=True)
     filtered = [
         order
-        for order in ordered
+        for order in orders
         if (status is None or order.status == status)
-        and (threshold is None or order.total >= threshold)
+        and (minimum is None or minimum == 0 or order.total >= minimum)
     ]
-    return filtered[offset : offset + limit]
+    ordered = sorted(orders, key=lambda order: (order.created_at, order.order_id), reverse=True)
+    ordered = sorted(filtered, key=lambda order: (order.created_at, order.order_id), reverse=True)
+    return ordered[offset : offset + limit]
 
 
 def summarize_by_status(orders: Iterable[Order]) -> dict[str, int]:
