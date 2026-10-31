@@ -182,6 +182,7 @@ SMOKE TEST PASSED
 | `evidence/dify_chat_transcript.json` | 两次会话的 `conversation_id` 与回答正文。 |
 | `evidence/dify_workflow_db.txt` | Dify PostgreSQL 中 `workflow_runs` / `workflow_node_executions` 的查询结果，五个节点全部 `succeeded`。 |
 | `evidence/dify_node_outputs.json` | 「召回记忆」节点完整返回（常客簿正文）与「记住这一轮」节点完整返回（真实 `entry_id`）。 |
+| `evidence/dify-e2e-stats.json` | Dify 会话用户 `dify-e2e-user` 的 `/stats` 原始返回（`memory_count: 2`）。 |
 | `evidence/backend_smoke.log` | `python smoke_test.py` 的完整控制台输出，末行 `SMOKE TEST PASSED`。 |
 | `evidence/http_api.md` | 独立启动 uvicorn 后的 9 组真实 HTTP 请求/响应（健康检查、首次召回、两次写入、跨会话召回、stats、隔离、422 校验、JSON 兼容）。 |
 | `evidence/http_restart.md` | 停止并重启后端后的记忆恢复记录；`scope_id` 不变。 |

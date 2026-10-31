@@ -10,6 +10,7 @@
 | `dify_chat_transcript.json` | `POST /v1/chat-messages` | 两次会话的 `conversation_id` 与回答 |
 | `dify_workflow_db.txt` | Dify PostgreSQL | `workflow_runs` / `workflow_node_executions`，五个节点全部 succeeded |
 | `dify_node_outputs.json` | Dify PostgreSQL | 「召回记忆」返回的常客簿原文、「记住这一轮」返回的真实 `entry_id` |
+| `dify-e2e-stats.json` | `GET /stats/dify-e2e-user` | Dify 端到端用户的实际记忆数与最近条目 |
 | `backend_smoke.log` | `python backend/smoke_test.py` | 空记忆兜底、写入、召回、隔离、重启、表单特殊字符 |
 | `http_api.md` | 独立 uvicorn + HTTP 请求 | 9 组真实 HTTP 请求/响应 |
 | `http_restart.md` | 停止/重启后端 | 同一 Scope 的记忆恢复记录 |
