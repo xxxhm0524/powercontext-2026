@@ -1,4 +1,5 @@
 fastapi>=0.115,<1
 uvicorn[standard]>=0.34,<1
 httpx>=0.28,<1
+python-multipart>=0.0.20,<1
 powercontext[builtin] @ git+https://github.com/oceanbase/powercontext.git@9db1753434162c0aa7c9f1189a1722e617880a52

@@ -1,0 +1,17 @@
+{
+  "session1": {
+    "event": "message",
+    "conversation_id": "10fd5c30-2085-43a8-9865-ccf7fed6f31f",
+    "mode": "advanced-chat",
+    "answer": "阿岚，桂花酿给你留着呢。今晚雾大，先暖暖手。你还欠我一枚铜币，不过不急着还——先说说今天想聊什么？",
+    "created_at": 1793412790
+  },
+  "session2": {
+    "event": "message",
+    "conversation_id": "9c11894c-2878-4d4d-bbb0-dad379725a6d",
+    "mode": "advanced-chat",
+    "answer": "阿岚，你回来啦。桂花酿我一直给你温着，铜币的事也没忘。今天想听雾港的什么故事？",
+    "created_at": 1793412801
+  },
+  "note": "Two independent Dify conversations, same user=dify-e2e-user. Session 2 answer recalls name and drink from PowerContext."
+}

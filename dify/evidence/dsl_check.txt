@@ -1,0 +1,6 @@
+DSL CHECK PASSED
+  file      : dsl\memory-tavern.yml
+  mode      : advanced-chat
+  nodes     : start -> http-request -> llm -> http-request -> answer
+  references: 1800000000002.body, 1800000000003.text, sys.query, sys.user_id
+  secrets   : none

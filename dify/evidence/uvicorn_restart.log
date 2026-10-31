@@ -1,0 +1,21 @@
+INFO:     Started server process [46444]
+INFO:     Waiting for application startup.
+2026-10-31 17:26:12,781 INFO powercontext.builtin.runtime.composition Artifact processing configuration
+2026-10-31 17:26:12,781 INFO memory_tavern memory tavern ready: database=D:\oceanbase\tmp\dify-evidence-data\memory_tavern.db
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8099 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52527 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52528 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52528 - "GET /stats/dify-demo-user HTTP/1.1" 200 OK
+2026-10-31 17:26:17,364 INFO memory_tavern recall player=dify-demo-user query_chars=15 context_chars=151
+INFO:     127.0.0.1:52528 - "POST /recall HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49817 - "GET /health HTTP/1.1" 200 OK
+2026-10-31 18:13:09,714 INFO memory_tavern recall player=dify-e2e-user query_chars=37 context_chars=48
+INFO:     127.0.0.1:57065 - "POST /recall HTTP/1.1" 200 OK
+2026-10-31 18:13:10,068 INFO memory_tavern remember player=dify-e2e-user user_chars=37 reply_chars=49 entry=mem_ent_de6c9a15484e4344bc08f9b2c25a0c0a
+INFO:     127.0.0.1:57068 - "POST /remember HTTP/1.1" 200 OK
+2026-10-31 18:13:21,105 INFO memory_tavern recall player=dify-e2e-user query_chars=25 context_chars=127
+INFO:     127.0.0.1:57072 - "POST /recall HTTP/1.1" 200 OK
+2026-10-31 18:13:21,173 INFO memory_tavern remember player=dify-e2e-user user_chars=25 reply_chars=39 entry=mem_ent_7f1ce2f028ce410fb1fdd56b22dd2c02
+INFO:     127.0.0.1:57074 - "POST /remember HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57080 - "GET /stats/dify-e2e-user HTTP/1.1" 200 OK

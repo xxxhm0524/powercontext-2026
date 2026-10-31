@@ -1,0 +1,23 @@
+# Dify 0.15.3 workflow_runs (成功运行)
+                  id                  |  status   | triggered_from | total_steps | total_tokens | elapsed |         created_at         
+--------------------------------------+-----------+----------------+-------------+--------------+---------+----------------------------
+ 58a7baba-f1cd-4380-8c35-e42d75bb5edd | succeeded | app-run        |           5 |          543 |   0.124 | 2026-10-31 10:13:21.063637
+ f203ef57-1521-4342-9d5e-074a8a9bd209 | succeeded | app-run        |           5 |          493 |   0.390 | 2026-10-31 10:13:09.698517
+(2 rows)
+
+
+# workflow_node_executions (两次成功运行)
+           workflow_run_id            | index |  node_type   |   title    |  status   | elapsed |                                                                             outputs                                                                              
+--------------------------------------+-------+--------------+------------+-----------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 58a7baba-f1cd-4380-8c35-e42d75bb5edd |     1 | start        | 开始       | succeeded |   0.014 | {"sys.query": "\u638c\u67dc\u7684\uff0c\u8fd8\u8bb0\u5f97\u6211\u5417\uff1f\u6211\u53eb\u4ec0\u4e48\u540d\u5b57\uff1f\u6211\u6700\u559c\u6b22\u559d\u4ec0\u4e48\
+ 58a7baba-f1cd-4380-8c35-e42d75bb5edd |     2 | http-request | 召回记忆   | succeeded |   0.043 | {"status_code": 200, "body": "\u3010\u5e38\u5ba2\u7c3f\u3011\n\u59d3\u540d\uff1a\u963f\u5c9a\n\u6700\u7231\u7684\u9152\uff1a\u6842\u82b1\u917f\n\n\u3010\u8bb0\u
+ 58a7baba-f1cd-4380-8c35-e42d75bb5edd |     3 | llm          | 掌柜阿墨   | succeeded |   0.035 | {"text": "\u963f\u5c9a\uff0c\u4f60\u56de\u6765\u5566\u3002\u6842\u82b1\u917f\u6211\u4e00\u76f4\u7ed9\u4f60\u6e29\u7740\uff0c\u94dc\u5e01\u7684\u4e8b\u4e5f\u6ca1
+ 58a7baba-f1cd-4380-8c35-e42d75bb5edd |     4 | http-request | 记住这一轮 | succeeded |   0.033 | {"status_code": 200, "body": "{\"status\":\"saved\",\"entry_id\":\"mem_ent_7f1ce2f028ce410fb1fdd56b22dd2c02\",\"memory_artifact_id\":\"memory\"}", "headers": {"
+ 58a7baba-f1cd-4380-8c35-e42d75bb5edd |     5 | answer       | 直接回复   | succeeded |   0.004 | {"answer": "\u963f\u5c9a\uff0c\u4f60\u56de\u6765\u5566\u3002\u6842\u82b1\u917f\u6211\u4e00\u76f4\u7ed9\u4f60\u6e29\u7740\uff0c\u94dc\u5e01\u7684\u4e8b\u4e5f\u6c
+ f203ef57-1521-4342-9d5e-074a8a9bd209 |     1 | start        | 开始       | succeeded |   0.014 | {"sys.query": "\u6211\u53eb\u963f\u5c9a\uff0c\u662f\u4e00\u540d\u8ff7\u8def\u7684\u65c5\u4eba\uff0c\u6700\u559c\u6b22\u6842\u82b1\u917f\u3002\u8eab\u4e0a\u53ea\
+ f203ef57-1521-4342-9d5e-074a8a9bd209 |     2 | http-request | 召回记忆   | succeeded |   0.024 | {"status_code": 200, "body": "\u3010\u5e38\u5ba2\u7c3f\u3011\u8fd8\u662f\u7a7a\u7684\u3002\u8fd9\u662f\u4f60\u4eec\u7b2c\u4e00\u6b21\u89c1\u9762\u3002\n\u8bf7\u
+ f203ef57-1521-4342-9d5e-074a8a9bd209 |     3 | llm          | 掌柜阿墨   | succeeded |   0.319 | {"text": "\u963f\u5c9a\uff0c\u6842\u82b1\u917f\u7ed9\u4f60\u7559\u7740\u5462\u3002\u4eca\u665a\u96fe\u5927\uff0c\u5148\u6696\u6696\u624b\u3002\u4f60\u8fd8\u6b20
+ f203ef57-1521-4342-9d5e-074a8a9bd209 |     4 | http-request | 记住这一轮 | succeeded |   0.032 | {"status_code": 200, "body": "{\"status\":\"saved\",\"entry_id\":\"mem_ent_de6c9a15484e4344bc08f9b2c25a0c0a\",\"memory_artifact_id\":\"memory\"}", "headers": {"
+ f203ef57-1521-4342-9d5e-074a8a9bd209 |     5 | answer       | 直接回复   | succeeded |   0.006 | {"answer": "\u963f\u5c9a\uff0c\u6842\u82b1\u917f\u7ed9\u4f60\u7559\u7740\u5462\u3002\u4eca\u665a\u96fe\u5927\uff0c\u5148\u6696\u6696\u624b\u3002\u4f60\u8fd8\u6b
+(10 rows)
+

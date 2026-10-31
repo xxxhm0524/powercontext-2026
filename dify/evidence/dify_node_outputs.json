@@ -1,0 +1,24 @@
+{
+  "recall_node": {
+    "status_code": 200,
+    "body": "【常客簿】\n姓名：阿岚\n最爱的酒：桂花酿\n\n【记忆片段】\n- 玩家说：我叫阿岚，是一名迷路的旅人，最喜欢桂花酿。身上只剩一枚铜币，先欠着酒钱吧。\n掌柜回应：阿岚，桂花酿给你留着呢。今晚雾大，先暖暖手。你还欠我一枚铜币，不过不急着还——先说说今天想聊什么？",
+    "headers": {
+      "date": "Sat, 31 Oct 2026 10:13:20 GMT",
+      "server": "uvicorn",
+      "content-length": "365",
+      "content-type": "text/plain; charset=utf-8"
+    },
+    "files": []
+  },
+  "remember_node": {
+    "status_code": 200,
+    "body": "{\"status\":\"saved\",\"entry_id\":\"mem_ent_7f1ce2f028ce410fb1fdd56b22dd2c02\",\"memory_artifact_id\":\"memory\"}",
+    "headers": {
+      "date": "Sat, 31 Oct 2026 10:13:20 GMT",
+      "server": "uvicorn",
+      "content-length": "102",
+      "content-type": "application/json"
+    },
+    "files": []
+  }
+}

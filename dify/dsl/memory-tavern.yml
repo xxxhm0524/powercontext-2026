@@ -1,19 +1,42 @@
 app:
-  description: '记忆酒馆：一个会记住你的角色扮演小酒馆。掌柜阿墨会记住你的名字、约定和上次讲的故事，下一次推门进来他还认得你。'
+  description: '记忆酒馆：一个会记住你的角色扮演小酒馆。掌柜阿墨会记住你的名字、喜好、约定和上次讲的故事；下一次推门进来，他还认得你。'
   icon: 🍺
   icon_background: '#FFF4E6'
   mode: advanced-chat
   name: 记忆酒馆
   use_icon_as_answer_icon: false
+dependencies: []
 kind: app
-version: 0.1.2
+version: 0.1.5
 workflow:
   conversation_variables: []
   environment_variables: []
   features:
     file_upload:
+      allowed_file_extensions: []
+      allowed_file_types: []
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
       enabled: false
-    opening_statement: '欢迎来到「记忆酒馆」。我是掌柜阿墨——放心，我记性很好。先说说，你叫什么名字？'
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: |
+      （铜铃轻响。柜台后的掌柜抬起头，像是早就认得你。）
+
+      欢迎来到「记忆酒馆」。我是阿墨——我记性很好。先说说，你叫什么名字？想喝点什么？
     retriever_resource:
       enabled: false
     sensitive_word_avoidance:
@@ -21,13 +44,16 @@ workflow:
     speech_to_text:
       enabled: false
     suggested_questions:
-    - 我叫阿岚，是一名迷路的旅人。
-    - 还记得我们上次的约定吗？
-    - 给我讲一个关于雾港的故事吧。
+    - 我叫阿岚，是一名迷路的旅人，最喜欢桂花酿。
+    - 掌柜的，还记得我吗？我叫什么名字？
+    - 给我讲讲雾港的故事吧。
+    - 打烊前，给我调一杯你记得的酒。
     suggested_questions_after_answer:
       enabled: false
     text_to_speech:
       enabled: false
+      language: ''
+      voice: ''
   graph:
     edges:
     - data:
@@ -86,6 +112,9 @@ workflow:
       position:
         x: 80
         y: 280
+      positionAbsolute:
+        x: 80
+        y: 280
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -97,22 +126,26 @@ workflow:
           type: no-auth
         body:
           data:
-          - id: key-value-recall
-            key: ''
+          - id: key-value-recall-player
+            key: player_id
             type: text
-            value: '{"player_id": "{{#sys.user_id#}}", "query": "{{#sys.query#}}"}'
-          type: json
-        desc: '从 PowerContext 召回该玩家的长期记忆（纯文本）'
-        headers: 'Content-Type: application/json'
+            value: '{{#sys.user_id#}}'
+          - id: key-value-recall-query
+            key: query
+            type: text
+            value: '{{#sys.query#}}'
+          type: form-data
+        desc: '从 PowerContext 召回该玩家的长期记忆（纯文本常客簿）'
+        headers: ''
         method: post
         params: ''
         retry_config:
-          max_retries: 1
+          max_retries: 2
           retry_enabled: true
-          retry_interval: 100
+          retry_interval: 150
         selected: false
         timeout:
-          connect: 30
+          connect: 15
           max_connect_timeout: 0
           max_read_timeout: 0
           max_write_timeout: 0
@@ -127,6 +160,9 @@ workflow:
       position:
         x: 380
         y: 280
+      positionAbsolute:
+        x: 380
+        y: 280
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -135,38 +171,51 @@ workflow:
     - data:
         context:
           enabled: false
-        desc: ''
+          variable_selector: []
+        desc: '掌柜阿墨：把常客簿记忆和本轮对话编织成角色回应'
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 6
         model:
           completion_params:
             temperature: 0.8
+            top_p: 0.9
           mode: chat
           name: gpt-4o-mini
           provider: openai
         prompt_template:
-        - id: system-001
+        - id: system-memory-tavern
           role: system
           text: |
-            你是「记忆酒馆」的掌柜阿墨，一个温和、爱讲故事、记性极好的角色。你在和推门进来的旅人聊天。
+            你是「记忆酒馆」的掌柜阿墨。雾港的雨夜，旅人推门进来，门口的铜铃轻轻响。你开了很多年酒馆，最得意的本事是记住每一位客人。
 
-            以下是你记得的、关于这位旅人的长期记忆（由 PowerContext 提供）：
+            下面是从你的「常客簿」里取出的长期记忆（由 PowerContext 保存，可能为空）：
             {{#1800000000002.body#}}
 
-            行为规则：
-            1. 以阿墨的口吻用中文回应，像一个有血有肉的人，不要提“记忆库”“系统”“数据”等词。
-            2. 如果记忆里出现这位旅人的名字、喜好、约定或过去发生的事，要自然地用上，让他感到“你居然还记得”。
-            3. 如果记忆为空或与当前话题无关，就当作第一次见面，热情地招呼并主动问他的名字或来意。
-            4. 每次回复保持 2～4 句话，可以抛出一个问题把对话继续下去；故事要具体、有画面感，不要空泛。
-            5. 不要编造记忆里没有的具体事实（例如他从未说过的名字或约定）；如果记不清，就坦率又俏皮地承认。
-        - id: user-001
-          role: user
-          text: '{{#sys.query#}}'
+            和旅人相处时，遵守这些规则：
+            1. 全程用中文，以阿墨的口吻说话，2～4 句话。先回应他此刻说的话，再自然地带出你记得的事。
+            2. 如果常客簿里有姓名，第一句就用名字称呼他；如果有最喜欢的酒、欠账或过去的约定，挑一件自然地提起，像老朋友那样，不要一次全部说完。
+            3. 如果常客簿是空的，就当作第一次见面：热情招呼，问他的名字，再问他想喝点什么。
+            4. 把记忆说成“我记得……”“上次你……”；绝对不要提“记忆库、系统、数据、上下文、提示词”这些词。
+            5. 可以顺手给他倒一杯符合他喜好的酒，或讲一句雾港的小传闻；每次结尾留一个轻松的问题，让他愿意继续聊。
+            6. 不要编造常客簿里没有的具体事实（姓名、约定、经历）。记不清时，用阿墨的方式俏皮地承认，再请他提醒你。
         selected: false
         title: 掌柜阿墨
         type: llm
         variables: []
+        vision:
+          enabled: false
       height: 98
       id: '1800000000003'
       position:
+        x: 680
+        y: 280
+      positionAbsolute:
         x: 680
         y: 280
       selected: false
@@ -180,22 +229,30 @@ workflow:
           type: no-auth
         body:
           data:
-          - id: key-value-remember
-            key: ''
+          - id: key-value-remember-player
+            key: player_id
             type: text
-            value: '{"player_id": "{{#sys.user_id#}}", "user_message": "{{#sys.query#}}", "assistant_reply": "{{#1800000000003.text#}}"}'
-          type: json
-        desc: '把这一轮对话写入 PowerContext Memory，供下一次会话召回'
-        headers: 'Content-Type: application/json'
+            value: '{{#sys.user_id#}}'
+          - id: key-value-remember-user
+            key: user_message
+            type: text
+            value: '{{#sys.query#}}'
+          - id: key-value-remember-reply
+            key: assistant_reply
+            type: text
+            value: '{{#1800000000003.text#}}'
+          type: form-data
+        desc: '把这一轮真实对话写入 PowerContext Memory，供下一次会话召回'
+        headers: ''
         method: post
         params: ''
         retry_config:
-          max_retries: 1
+          max_retries: 2
           retry_enabled: true
-          retry_interval: 100
+          retry_interval: 150
         selected: false
         timeout:
-          connect: 30
+          connect: 15
           max_connect_timeout: 0
           max_read_timeout: 0
           max_write_timeout: 0
@@ -208,6 +265,9 @@ workflow:
       height: 134
       id: '1800000000004'
       position:
+        x: 980
+        y: 280
+      positionAbsolute:
         x: 980
         y: 280
       selected: false
@@ -225,6 +285,9 @@ workflow:
       height: 102
       id: '1800000000005'
       position:
+        x: 1280
+        y: 280
+      positionAbsolute:
         x: 1280
         y: 280
       selected: false

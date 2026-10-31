@@ -1,0 +1,36 @@
+2026-10-31 18:20:02,393 INFO powercontext.builtin.runtime.composition Artifact processing configuration
+2026-10-31 18:20:02,393 INFO memory_tavern memory tavern ready: database=C:\Users\18090\AppData\Local\Temp\memory-tavern-smoke-k7cgon55\memory_tavern.db
+2026-10-31 18:20:02,394 INFO httpx HTTP Request: GET http://memory-tavern/health "HTTP/1.1 200 OK"
+2026-10-31 18:20:02,407 INFO memory_tavern recall player=smoke-player query_chars=7 context_chars=48
+2026-10-31 18:20:02,407 INFO httpx HTTP Request: POST http://memory-tavern/recall "HTTP/1.1 200 OK"
+2026-10-31 18:20:02,427 INFO memory_tavern remember player=smoke-player user_chars=37 reply_chars=20 entry=mem_ent_c6cf605d247e4b97a06f55b83532d0a6
+2026-10-31 18:20:02,427 INFO httpx HTTP Request: POST http://memory-tavern/remember "HTTP/1.1 200 OK"
+2026-10-31 18:20:02,448 INFO memory_tavern remember player=smoke-player user_chars=21 reply_chars=19 entry=mem_ent_37b6d9d77be240348d61fffbd8e0d560
+2026-10-31 18:20:02,448 INFO httpx HTTP Request: POST http://memory-tavern/remember "HTTP/1.1 200 OK"
+2026-10-31 18:20:02,477 INFO memory_tavern recall player=smoke-player query_chars=25 context_chars=151
+2026-10-31 18:20:02,477 INFO httpx HTTP Request: POST http://memory-tavern/recall "HTTP/1.1 200 OK"
+【常客簿】
+姓名：阿岚
+最爱的酒：桂花酿
+
+【记忆片段】
+- 玩家说：我叫阿岚，是一名迷路的旅人，最喜欢桂花酿。身上只剩一枚铜币，先欠着酒钱吧。
+掌柜回应：阿岚，桂花酿给你留着，铜币的事我也记着。
+- 玩家说：给我讲讲雾港的故事吧，我想在那里找一条船。
+掌柜回应：雾港的船都藏在雾里，等风停了才肯露面。
+2026-10-31 18:20:02,488 INFO memory_tavern recall player=another-player query_chars=7 context_chars=48
+2026-10-31 18:20:02,488 INFO httpx HTTP Request: POST http://memory-tavern/recall "HTTP/1.1 200 OK"
+2026-10-31 18:20:02,497 INFO httpx HTTP Request: GET http://memory-tavern/stats/smoke-player "HTTP/1.1 200 OK"
+2026-10-31 18:20:02,524 INFO memory_tavern recall player=smoke-player query_chars=8 context_chars=151
+2026-10-31 18:20:02,524 INFO httpx HTTP Request: POST http://memory-tavern/recall "HTTP/1.1 200 OK"
+2026-10-31 18:20:02,548 INFO memory_tavern remember player=smoke-player user_chars=30 reply_chars=21 entry=mem_ent_ba770b900ff9470ba0f1e07b8e7351d7
+2026-10-31 18:20:02,548 INFO httpx HTTP Request: POST http://memory-tavern/remember "HTTP/1.1 200 OK"
+2026-10-31 18:20:02,576 INFO memory_tavern recall player=smoke-player query_chars=7 context_chars=215
+2026-10-31 18:20:02,576 INFO httpx HTTP Request: POST http://memory-tavern/recall "HTTP/1.1 200 OK"
+2026-10-31 18:20:02,577 INFO httpx HTTP Request: POST http://memory-tavern/recall "HTTP/1.1 422 Unprocessable Entity"
+2026-10-31 18:20:02,577 INFO httpx HTTP Request: POST http://memory-tavern/recall "HTTP/1.1 415 Unsupported Media Type"
+2026-10-31 18:20:02,606 INFO memory_tavern recall player=smoke-player query_chars=9 context_chars=215
+2026-10-31 18:20:02,607 INFO httpx HTTP Request: POST http://memory-tavern/recall "HTTP/1.1 200 OK"
+2026-10-31 18:20:02,607 INFO memory_tavern memory tavern shutting down
+
+SMOKE TEST PASSED
